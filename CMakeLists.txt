@@ -5,7 +5,7 @@
 #
 # For details, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 
-set(XXHASH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
+set(XXHASH_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
 file(STRINGS "${XXHASH_DIR}/xxhash.h" XXHASH_VERSION_MAJOR REGEX "^#define XXH_VERSION_MAJOR +([0-9]+) *$")
 string(REGEX REPLACE "^#define XXH_VERSION_MAJOR +([0-9]+) *$" "\\1" XXHASH_VERSION_MAJOR "${XXHASH_VERSION_MAJOR}")
@@ -18,8 +18,7 @@ set(XXHASH_LIB_VERSION ${XXHASH_VERSION_STRING})
 set(XXHASH_LIB_SOVERSION "${XXHASH_VERSION_MAJOR}")
 mark_as_advanced(XXHASH_VERSION_MAJOR XXHASH_VERSION_MINOR XXHASH_VERSION_RELEASE XXHASH_VERSION_STRING XXHASH_LIB_VERSION XXHASH_LIB_SOVERSION)
 
-option(BUILD_XXHSUM "Build the xxhsum binary" ON)
-option(BUILD_SHARED_LIBS "Build shared library" ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE    TRUE)
 
 if("${CMAKE_VERSION}" VERSION_LESS "3.0")
   project(XXHASH C)
@@ -30,28 +29,7 @@ else()
     LANGUAGES C)
 endif()
 
-cmake_minimum_required (VERSION 2.8.12)
-
-# If XXHASH is being bundled in another project, we don't want to
-# install anything.  However, we want to let people override this, so
-# we'll use the XXHASH_BUNDLED_MODE variable to let them do that; just
-# set it to OFF in your project before you add_subdirectory(xxhash/contrib/cmake_unofficial).
-if(CMAKE_CURRENT_SOURCE_DIR STREQUAL "${CMAKE_SOURCE_DIR}")
-  # Bundled mode hasn't been set one way or the other, set the default
-  # depending on whether or not we are the top-level project.
-  if("${XXHASH_PARENT_DIRECTORY}" STREQUAL "")
-    set(XXHASH_BUNDLED_MODE OFF)
-  else()
-    set(XXHASH_BUNDLED_MODE ON)
-  endif()
-endif()
-mark_as_advanced(XXHASH_BUNDLED_MODE)
-
-# Allow people to choose whether to build shared or static libraries
-# via the BUILD_SHARED_LIBS option unless we are in bundled mode, in
-# which case we always use static libraries.
-include(CMakeDependentOption)
-CMAKE_DEPENDENT_OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON "NOT XXHASH_BUNDLED_MODE" OFF)
+cmake_minimum_required (VERSION 3.5)
 
 include_directories("${XXHASH_DIR}")
 
@@ -60,13 +38,11 @@ add_library(xxhash "${XXHASH_DIR}/xxhash.c")
 if (BUILD_SHARED_LIBS)
   target_compile_definitions(xxhash PUBLIC XXH_EXPORT)
 endif ()
+
 set_target_properties(xxhash PROPERTIES
   SOVERSION "${XXHASH_VERSION_STRING}"
-  VERSION "${XXHASH_VERSION_STRING}")
-
-# xxhsum
-add_executable(xxhsum "${XXHASH_DIR}/xxhsum.c")
-target_link_libraries(xxhsum xxhash)
+  VERSION "${XXHASH_VERSION_STRING}"
+  )
 
 # Extra warning flags
 include (CheckCCompilerFlag)
@@ -88,16 +64,25 @@ foreach (flag
   unset(flag_to_test)
 endforeach (flag)
 
-if(NOT XXHASH_BUNDLED_MODE)
-  include(GNUInstallDirs)
 
-  install(TARGETS xxhsum
-    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-  install(TARGETS xxhash
-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-  install(FILES "${XXHASH_DIR}/xxhash.h"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-  install(FILES "${XXHASH_DIR}/xxhsum.1"
-    DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
-endif(NOT XXHASH_BUNDLED_MODE)
+include(GNUInstallDirs)
+
+install(TARGETS xxhash EXPORT xxhashConfig
+  LIBRARY DESTINATION       ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION       ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION       ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION      ${CMAKE_INSTALL_INCLUDEDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FRAMEWORK DESTINATION     ${CMAKE_INSTALL_PREFIX}
+  )
+install(FILES "${XXHASH_DIR}/xxhash.h"
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/xxhash"
+  )
+install(
+  EXPORT xxhashConfig
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xxhash
+)
+export(
+  TARGETS xxhash
+  FILE xxhashConfig.cmake
+)
