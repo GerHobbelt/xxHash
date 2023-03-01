@@ -38,7 +38,9 @@
  * script to test the file.
  */
 
+#ifndef _CRT_SECURE_NO_WARNINGS 
 #define _CRT_SECURE_NO_WARNINGS /* Silence warnings on MSVC */
+#endif
 #include <stdio.h>
 
 /* Use a Japanese filename, something that can't be cheated with ANSI.
