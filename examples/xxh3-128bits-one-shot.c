@@ -58,8 +58,8 @@ void my_print_xxh128(XXH128_hash_t hashValue)
 void my_compute_xxh3_128bits_one_shot()
 {
     // Setup data
-    const char *data            = "xxHash - Extremely fast hash algorithm";
-    size_t      dataSizeInBytes = strlen(data);
+    const char *const data            = "xxHash - Extremely fast hash algorithm";
+    size_t const      dataSizeInBytes = strlen(data);
 
     // Display data
     printf("data[%zd] = {\n", dataSizeInBytes);
@@ -67,10 +67,10 @@ void my_compute_xxh3_128bits_one_shot()
     printf("}\n");
 
     // Compute hash
-    XXH128_hash_t digest3_128 = //
-        XXH3_128bits(           // XXH3 128-bit variant one-shot hash function
-            data,               // pointer to data
-            dataSizeInBytes     // data length in bytes
+    XXH128_hash_t const digest3_128 = //
+        XXH3_128bits(                 // XXH3 128-bit variant one-shot hash function
+            data,                     // pointer to data
+            dataSizeInBytes           // data length in bytes
         );
 
     // Display hash
