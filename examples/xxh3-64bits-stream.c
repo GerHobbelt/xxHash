@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 {
     // For all arguments
     for (int i = 1; i < argc; ++i) {
-        const char *filename = argv[i];
+        const char *const filename = argv[i];
 
         // Compute XXH3 64bits variant hash with streaming API
         XXH64_hash_t const digest3_64 = my_compute_xxh3_64bits_from_file(filename);

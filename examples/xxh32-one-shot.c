@@ -59,8 +59,8 @@ void my_print_xxh32(XXH32_hash_t hashValue)
 void my_compute_xxh32_one_shot()
 {
     // Setup data
-    const char *data            = "xxHash - Extremely fast hash algorithm";
-    size_t      dataSizeInBytes = strlen(data);
+    const char *const data            = "xxHash - Extremely fast hash algorithm";
+    size_t const      dataSizeInBytes = strlen(data);
 
     // Display data
     printf("data[%zd] = {\n", dataSizeInBytes);
@@ -68,11 +68,11 @@ void my_compute_xxh32_one_shot()
     printf("}\n");
 
     // Compute hash
-    XXH32_hash_t digest32 =  //
-        XXH32(               // 32-bit one-shot hash function
-            data,            // pointer to data
-            dataSizeInBytes, // data length in bytes
-            0U               // 32-bit seed
+    XXH32_hash_t const digest32 = //
+        XXH32(                    // 32-bit one-shot hash function
+            data,                 // pointer to data
+            dataSizeInBytes,      // data length in bytes
+            0U                    // 32-bit seed
         );
 
     // Display hash

@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 {
     // For all arguments
     for (int i = 1; i < argc; ++i) {
-        const char *filename = argv[i];
+        const char *const filename = argv[i];
 
         // Compute XXH32 hash with streaming API
         XXH32_hash_t const digest32 = my_compute_xxh32_from_file(filename);
