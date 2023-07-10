@@ -1,0 +1,9 @@
+xxh3-128bits-one-shot
+xxh3-128bits-stream
+xxh3-64bits-one-shot
+xxh3-64bits-stream
+xxh32-one-shot
+xxh32-stream
+xxh64-one-shot
+xxh64-stream
+xxhash-hello
