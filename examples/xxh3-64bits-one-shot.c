@@ -6,7 +6,7 @@ How to use XXH3_64bits() one-shot hashing function
 Building
 --------
 
-cc -std=c99 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror -I .. -L .. xxh3-64bits-one-shot.c -l xxhash
+cc -std=c99 xxh3-64bits-one-shot.c -l xxhash
 
 Output
 ------

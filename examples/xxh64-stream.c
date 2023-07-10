@@ -6,7 +6,7 @@ How to use XXH64 streaming hashing function
 Building & Test
 ---------------
 
-cc -std=c99 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror -I .. -L .. xxh64-stream.c -l xxhash
+cc -std=c99 xxh64-stream.c -l xxhash
 
 ./a.out ../cli/COPYING
 

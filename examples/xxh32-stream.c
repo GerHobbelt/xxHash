@@ -5,7 +5,7 @@ How to use XXH32 streaming hashing function
 Building
 --------
 
-cc -std=c99 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror -I .. -L .. xxh32-stream.c -l xxhash
+cc -std=c99 xxh32-stream.c -l xxhash
 
 ./a.out ../cli/COPYING
 

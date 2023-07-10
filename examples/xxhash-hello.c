@@ -6,7 +6,7 @@ How to use xxHash (basic)
 Building & Test
 ---------------
 
-cc -std=c99 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror -I .. -L .. xxhash-hello.c -l xxhash
+cc -std=c99 xxhash-hello.c -l xxhash
 
 ./a.out
 
