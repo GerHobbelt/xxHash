@@ -6,7 +6,7 @@ How to use XXH3 128bits variant streaming hashing function
 Building
 --------
 
-cc -std=c99 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror -I .. -L .. xxh3-128bits-stream.c -l xxhash
+cc -std=c99 xxh3-128bits-stream.c -l xxhash
 
 ./a.out ../cli/COPYING
 
