@@ -1,13 +1,17 @@
 CFLAGS  += -std=c99 -I .. -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror -g
 LDFLAGS += -L .. -l:libxxhash.a
-FILES    = ../cli/COPYING
+
+LIBSRC   = ../xxhash.h		\
+	   ../xxhash.c		\
+	   ../xxh3.h		\
+	   ../xxh_x86dispatch.h	\
+	   ../xxh_x86dispatch.c	\
 
 .PHONY: default
 default: all
 
 .PHONY: all
 all: build-all test-all
-
 
 build-all:			\
 	xxhash-hello		\
@@ -27,10 +31,10 @@ test-all:
 	./xxh64-one-shot
 	./xxh3-64bits-one-shot
 	./xxh3-128bits-one-shot
-	./xxh32-stream        $(FILES)
-	./xxh64-stream        $(FILES)
-	./xxh3-64bits-stream  $(FILES)
-	./xxh3-128bits-stream $(FILES)
+	./xxh32-stream        ../cli/COPYING
+	./xxh64-stream        ../cli/COPYING
+	./xxh3-64bits-stream  ../cli/COPYING
+	./xxh3-128bits-stream ../cli/COPYING
 
 
 clean:
@@ -57,29 +61,9 @@ format-code:
 	clang-format -i xxh3-128bits-stream.c
 
 
-xxhash-hello:          xxhash-hello.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+# Pattern
 
-xxh32-one-shot:        xxh32-one-shot.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-xxh64-one-shot:        xxh64-one-shot.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-xxh3-64bits-one-shot:  xxh3-64bits-one-shot.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-xxh3-128bits-one-shot: xxh3-128bits-one-shot.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-xxh32-stream:          xxh32-stream.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-xxh64-stream:          xxh64-stream.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-xxh3-64bits-stream:    xxh3-64bits-stream.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-xxh3-128bits-stream:   xxh3-128bits-stream.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+%: %.c $(LIBSRC)
+	# $@ = %   = <executable_name>
+	# $< = %.c = <executable_name>.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS)
