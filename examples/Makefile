@@ -14,6 +14,7 @@ default: all
 .PHONY: all
 all: build-all test-all
 
+
 build-all:			\
 	xxhash-hello		\
 	xxh32-one-shot		\
@@ -63,7 +64,7 @@ format-code:
 
 
 # Pattern
+# $@ = %   = <executable_name>
+# $< = %.c = <executable_name>.c
 %: %.c $(LIBSRC)
-	# $@ = %   = <executable_name>
-	# $< = %.c = <executable_name>.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS)
