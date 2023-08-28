@@ -184,6 +184,18 @@ extern "C" {
 #  define XXH_TARGET_SSE2 __attribute__((__target__("sse2")))
 #  define XXH_TARGET_AVX2 __attribute__((__target__("avx2")))
 #  define XXH_TARGET_AVX512 __attribute__((__target__("avx512f")))
+#elif defined(__clang__) && defined(_MSC_VER) /* clang-cl.exe */
+#  include <emmintrin.h> /* SSE2 */
+#  if XXH_DISPATCH_AVX2 || XXH_DISPATCH_AVX512
+#    include <immintrin.h> /* AVX2, AVX512F */
+#    include <smmintrin.h>
+#    include <avxintrin.h>
+#    include <avx2intrin.h>
+#    include <avx512fintrin.h>
+#  endif
+#  define XXH_TARGET_SSE2 __attribute__((__target__("sse2")))
+#  define XXH_TARGET_AVX2 __attribute__((__target__("avx2")))
+#  define XXH_TARGET_AVX512 __attribute__((__target__("avx512f")))
 #elif defined(_MSC_VER)
 #  include <intrin.h>
 #  define XXH_TARGET_SSE2
@@ -255,7 +267,7 @@ extern "C" {
 static void XXH_cpuid(xxh_u32 eax, xxh_u32 ecx, xxh_u32* abcd)
 {
 #if defined(_MSC_VER)
-    __cpuidex(abcd, eax, ecx);
+    __cpuidex((int*)abcd, eax, ecx);
 #else
     xxh_u32 ebx, edx;
 # if defined(__i386__) && defined(__PIC__)
