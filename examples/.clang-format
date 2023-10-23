@@ -1,0 +1,8 @@
+﻿---
+BasedOnStyle:  LLVM
+ColumnLimit: 120
+IndentWidth: 4
+BreakBeforeBraces: Linux
+
+AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments: true
