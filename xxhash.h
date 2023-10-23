@@ -2091,7 +2091,11 @@ static int XXH_isLittleEndian(void)
 #  define XXH_UNREACHABLE()
 #endif
 
-#define XXH_ASSUME(c) if (!(c)) { XXH_UNREACHABLE(); }
+#if XXH_HAS_BUILTIN(__builtin_assume)
+#  define XXH_ASSUME(c) __builtin_assume(c)
+#else
+#  define XXH_ASSUME(c) if (!(c)) { XXH_UNREACHABLE(); }
+#endif
 
 /*!
  * @internal
@@ -5551,7 +5555,7 @@ XXH3_consumeStripes(xxh_u64* XXH_RESTRICT acc,
             /* Then continue the loop with the full block size */
             nbStripesThisIter = nbStripesPerBlock;
             initialSecret = secret;
-        } while (nbStripes > nbStripesPerBlock);
+        } while (nbStripes >= nbStripesPerBlock);
         *nbStripesSoFarPtr = 0;
     }
     /* Process a partial block */
