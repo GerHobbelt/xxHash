@@ -261,12 +261,7 @@ extern "C" {
 static void XXH_cpuid(xxh_u32 eax, xxh_u32 ecx, xxh_u32* abcd)
 {
 #if defined(_MSC_VER)
-	int abcde[4] = {0};
-    __cpuidex(abcde, eax, ecx);
-	abcd[0] = abcde[0];
-	abcd[1] = abcde[1];
-	abcd[2] = abcde[2];
-	abcd[3] = abcde[3];
+    __cpuidex((int*)abcd, eax, ecx);
 #else
     xxh_u32 ebx, edx;
 # if defined(__i386__) && defined(__PIC__)
