@@ -5221,8 +5221,8 @@ XXH3_hashLong_64b_withSeed(const void* XXH_RESTRICT input, size_t len,
 }
 
 
-typedef XXH64_hash_t (*XXH3_hashLong64_f)(const void* XXH_RESTRICT, size_t,
-                                          XXH64_hash_t, const xxh_u8* XXH_RESTRICT, size_t);
+typedef XXH64_hash_t (*XXH3_hashLong64_f)(const void* XXH_RESTRICT input, size_t len,
+                                          XXH64_hash_t seed64, const xxh_u8* XXH_RESTRICT secret, size_t secretLen);
 
 XXH_FORCE_INLINE XXH64_hash_t
 XXH3_64bits_internal(const void* XXH_RESTRICT input, size_t len,

@@ -160,7 +160,7 @@ double bench_hash(BMK_benchFn_t hashfn,
     size_t nbBlocks = (SIZE_TO_HASH_PER_ROUND / size) + 1;
     if (nbBlocks > NB_HASH_ROUNDS_MAX) nbBlocks = NB_HASH_ROUNDS_MAX;
 
-    return bench_hash_internal(benchfn, payload,
+    return bench_hash_internal(benchfn, (void *)payload,
                                nbBlocks, sizef, size,
                                total_time_ms, iter_time_ms);
 }
