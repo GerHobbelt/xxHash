@@ -83,6 +83,8 @@ extern "C" {
 
 #if defined(__AVX__) && !defined(XXH_X86DISPATCH_ALLOW_AVX)
 #  error "Do not compile xxh_x86dispatch.c with AVX enabled! See the comment above."
+#else
+#  pragma message("SHOULD NOT compile xxh_x86dispatch.c with AVX enabled! See the comment above. You have defined XXH_X86DISPATCH_ALLOW_AVX so we assume you know what you're doing!")
 #endif
 
 #ifdef __has_include
@@ -235,7 +237,12 @@ extern "C" {
 static void XXH_cpuid(xxh_u32 eax, xxh_u32 ecx, xxh_u32* abcd)
 {
 #if defined(_MSC_VER)
-    __cpuidex(abcd, eax, ecx);
+	int abcde[4] = {0};
+    __cpuidex(abcde, eax, ecx);
+	abcd[0] = abcde[0];
+	abcd[1] = abcde[1];
+	abcd[2] = abcde[2];
+	abcd[3] = abcde[3];
 #else
     xxh_u32 ebx, edx;
 # if defined(__i386__) && defined(__PIC__)
