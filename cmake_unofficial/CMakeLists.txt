@@ -96,6 +96,11 @@ else()
 endif()
 add_library(${PROJECT_NAME}::xxhash ALIAS xxhash)
 
+option(XXHASH_USE_SSE2 "Compile using SSE2 code path")
+if (XXHASH_USE_SSE2)
+  target_compile_definitions(xxhash PUBLIC XXH_VECTOR=XXH_SSE2)
+endif()
+
 target_include_directories(xxhash
   PUBLIC
     $<BUILD_INTERFACE:${XXHASH_DIR}>
