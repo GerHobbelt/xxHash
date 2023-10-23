@@ -3020,11 +3020,19 @@ XXH_PUBLIC_API XXH64_hash_t XXH64_hashFromCanonical(XXH_NOESCAPE const XXH64_can
 /* ===   Compiler specifics   === */
 
 #if ((defined(sun) || defined(__sun)) && __cplusplus) /* Solaris includes __STDC_VERSION__ with C++. Tested with GCC 5.5 */
-#  define XXH_RESTRICT /* disable */
+#  define XXH_RESTRICT   /* disable */
 #elif defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   /* >= C99 */
 #  define XXH_RESTRICT   restrict
+#elif (defined (__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))) \
+   || (defined (__clang__)) \
+   || (defined (_MSC_VER) && (_MSC_VER >= 1400)) \
+   || (defined (__INTEL_COMPILER) && (__INTEL_COMPILER >= 1300))
+/*
+ * There are a LOT more compilers that recognize __restrict but this
+ * covers the major ones.
+ */
+#  define XXH_RESTRICT   __restrict
 #else
-/* Note: it might be useful to define __restrict or __restrict__ for some C++ compilers */
 #  define XXH_RESTRICT   /* disable */
 #endif
 
@@ -4656,6 +4664,7 @@ XXH3_accumulate_512_vsx(  void* XXH_RESTRICT acc,
         /* xacc[i] = acc_vec; */
         vec_xst((xxh_u32x4)acc_vec, 0, xacc + 4 * i);
     }
+    __sync_synchronize();
 }
 XXH_FORCE_INLINE XXH3_ACCUMULATE_TEMPLATE(vsx)
 
