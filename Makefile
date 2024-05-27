@@ -183,6 +183,7 @@ clean:  ## remove all build artifacts
 	$(Q)$(RM) xxhsum$(EXT) xxhsum32$(EXT) xxhsum_inlinedXXH$(EXT) dispatch$(EXT)
 	$(Q)$(RM) xxhsum.wasm xxhsum.js xxhsum.html
 	$(Q)$(RM) xxh32sum$(EXT) xxh64sum$(EXT) xxh128sum$(EXT) xxh3sum$(EXT)
+	$(Q)$(RM) fuzzer
 	$(Q)$(RM) $(XXHSUM_SRC_DIR)/*.o $(XXHSUM_SRC_DIR)/*.obj
 	$(MAKE) -C tests clean
 	$(MAKE) -C tests/bench clean
@@ -314,6 +315,13 @@ test-xxhsum-c: xxhsum
 	echo "0000000000000000  test-expects-file-not-found" | ./xxhsum -c -; test $$? -eq 1
 	echo "00000000  test-expects-file-not-found" | ./xxhsum -c -; test $$? -eq 1
 	@$(RM) .test.*
+
+LIB_FUZZING_ENGINE?="-fsanitize=fuzzer"
+CC_VERSION := $(shell $(CC) --version)
+ifneq (,$(findstring clang,$(CC_VERSION)))
+fuzzer: libxxhash.a fuzz/fuzzer.c
+	$(CC) $(CFLAGS) $(LIB_FUZZING_ENGINE) -I. -o fuzzer fuzz/fuzzer.c -L. -Wl,-Bstatic -lxxhash -Wl,-Bdynamic
+endif
 
 .PHONY: test-filename-escape
 test-filename-escape:
@@ -546,7 +554,7 @@ endif
 
 INSTALL_PROGRAM ?= $(INSTALL)
 INSTALL_DATA    ?= $(INSTALL) -m 644
-INSTALL_DIR     ?= $(INSTALL) -d -m 755
+MAKE_DIR        ?= $(INSTALL) -d -m 755
 
 
 # Escape special symbols by putting each character into its separate class
@@ -585,12 +593,12 @@ libxxhash.pc: libxxhash.pc.in
 
 install_libxxhash.a: libxxhash.a
 	@echo Installing libxxhash.a
-	$(Q)$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)
+	$(Q)$(MAKE_DIR) $(DESTDIR)$(LIBDIR)
 	$(Q)$(INSTALL_DATA) libxxhash.a $(DESTDIR)$(LIBDIR)
 
 install_libxxhash: libxxhash
 	@echo Installing libxxhash
-	$(Q)$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)
+	$(Q)$(MAKE_DIR) $(DESTDIR)$(LIBDIR)
 	$(Q)$(INSTALL_PROGRAM) $(LIBXXH) $(DESTDIR)$(LIBDIR)
 	$(Q)ln -sf $(LIBXXH) $(DESTDIR)$(LIBDIR)/libxxhash.$(SHARED_EXT_MAJOR)
 	$(Q)ln -sf $(LIBXXH) $(DESTDIR)$(LIBDIR)/libxxhash.$(SHARED_EXT)
@@ -605,12 +613,12 @@ endif
 
 install_libxxhash.pc: libxxhash.pc
 	@echo Installing pkgconfig
-	$(Q)$(INSTALL_DIR) $(DESTDIR)$(PKGCONFIGDIR)/
+	$(Q)$(MAKE_DIR) $(DESTDIR)$(PKGCONFIGDIR)/
 	$(Q)$(INSTALL_DATA) libxxhash.pc $(DESTDIR)$(PKGCONFIGDIR)/
 
 install_xxhsum: xxhsum
 	@echo Installing xxhsum
-	$(Q)$(INSTALL_DIR) $(DESTDIR)$(BINDIR)/
+	$(Q)$(MAKE_DIR) $(DESTDIR)$(BINDIR)/
 	$(Q)$(INSTALL_PROGRAM) xxhsum $(DESTDIR)$(BINDIR)/xxhsum
 	$(Q)ln -sf xxhsum $(DESTDIR)$(BINDIR)/xxh32sum
 	$(Q)ln -sf xxhsum $(DESTDIR)$(BINDIR)/xxh64sum
@@ -619,7 +627,7 @@ install_xxhsum: xxhsum
 
 install_man:
 	@echo Installing man pages
-	$(Q)$(INSTALL_DIR) $(DESTDIR)$(MANDIR)/
+	$(Q)$(MAKE_DIR) $(DESTDIR)$(MANDIR)/
 	$(Q)$(INSTALL_DATA) $(MAN) $(DESTDIR)$(MANDIR)/xxhsum.1
 	$(Q)ln -sf xxhsum.1 $(DESTDIR)$(MANDIR)/xxh32sum.1
 	$(Q)ln -sf xxhsum.1 $(DESTDIR)$(MANDIR)/xxh64sum.1
