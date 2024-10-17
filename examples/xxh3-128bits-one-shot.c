@@ -79,7 +79,7 @@ void my_compute_xxh3_128bits_one_shot()
     printf("\n");
 }
 
-int main()
+int main(void)
 {
     my_compute_xxh3_128bits_one_shot();
     return EXIT_SUCCESS;

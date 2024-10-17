@@ -22,7 +22,7 @@ d = 0xa1db1e138d496183
 #include <string.h>
 #include <xxhash.h>
 
-int main()
+int main(void)
 {
     // Setup data
     const char *const data            = "xxHash - Extremely fast hash algorithm";

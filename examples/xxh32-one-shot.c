@@ -81,7 +81,7 @@ void my_compute_xxh32_one_shot()
     printf("\n");
 }
 
-int main()
+int main(void)
 {
     my_compute_xxh32_one_shot();
     return EXIT_SUCCESS;
