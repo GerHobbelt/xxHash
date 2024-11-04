@@ -2746,6 +2746,9 @@ static int XXH_isLittleEndian(void)
                                && XXH_HAS_BUILTIN(__builtin_rotateleft64)
 #  define XXH_rotl32 __builtin_rotateleft32
 #  define XXH_rotl64 __builtin_rotateleft64
+#elif XXH_HAS_BUILTIN(__builtin_stdc_rotate_left)
+#  define XXH_rotl32 __builtin_stdc_rotate_left
+#  define XXH_rotl64 __builtin_stdc_rotate_left
 /* Note: although _rotl exists for minGW (GCC under windows), performance seems poor */
 #elif defined(_MSC_VER)
 #  define XXH_rotl32(x,r) _rotl(x,r)
