@@ -41,6 +41,14 @@
 extern "C" {
 #endif
 
+/*!
+ * @brief Returns the best XXH3 implementation for x86
+ *
+ * @return The best @ref XXH_VECTOR implementation.
+ * @see XXH_VECTOR_TYPES
+ */
+XXH_PUBLIC_API int XXH_featureTest(void);
+
 XXH_PUBLIC_API XXH64_hash_t  XXH3_64bits_dispatch(XXH_NOESCAPE const void* input, size_t len);
 XXH_PUBLIC_API XXH64_hash_t  XXH3_64bits_withSeed_dispatch(XXH_NOESCAPE const void* input, size_t len, XXH64_hash_t seed);
 XXH_PUBLIC_API XXH64_hash_t  XXH3_64bits_withSecret_dispatch(XXH_NOESCAPE const void* input, size_t len, XXH_NOESCAPE const void* secret, size_t secretLen);

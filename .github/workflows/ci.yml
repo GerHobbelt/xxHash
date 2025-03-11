@@ -386,6 +386,7 @@ jobs:
           { name: 'RISC-V',          xcc_pkg: gcc-riscv64-linux-gnu,        xcc: riscv64-linux-gnu-gcc,        xemu_pkg: qemu-system-riscv64,xemu: qemu-riscv64-static, os: ubuntu-latest, },
           # SPARC64 qemu emulation seems broken on Ubuntu-22
           { name: 'SPARC',           xcc_pkg: gcc-sparc64-linux-gnu,        xcc: sparc64-linux-gnu-gcc,        xemu_pkg: qemu-system-sparc,  xemu: qemu-sparc64-static, os: ubuntu-20.04, },
+          { name: 'LoongArch',       xcc_pkg: gcc-14-loongarch64-linux-gnu,    xcc: loongarch64-linux-gnu-gcc-14, xemu_pkg: qemu-system-loongarch64, xemu: qemu-loongarch64-static, os: ubuntu-24.04, },
 
           { name: 'ARM, gcc-10',     xcc_pkg: gcc-10-arm-linux-gnueabi,     xcc: arm-linux-gnueabi-gcc-10,     xemu_pkg: qemu-system-arm,   xemu: qemu-arm-static,     os: ubuntu-20.04, },
           { name: 'AARCH64, gcc-10', xcc_pkg: gcc-10-aarch64-linux-gnu,     xcc: aarch64-linux-gnu-gcc-10,     xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-20.04, },
@@ -474,6 +475,11 @@ jobs:
       run: |
         make clean; LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make check
 
+    - name: LoongArch (XXH_VECTOR=[ scalar, LSX ])
+      if: ${{ startsWith(matrix.name, 'LoongArch') }}
+      run: |
+        CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
+        CPPFLAGS=-DXXH_VECTOR=XXH_LSX CFLAGS="-O3 -march=la464 -mlsx" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
 
   # macOS
 
@@ -484,7 +490,9 @@ jobs:
       fail-fast: false  # 'false' means Don't stop matrix workflows even if some matrix failed.
       matrix:
         system: [
-          { os: macos-12     },
+          { os: macos-13     },
+          { os: macos-14     },
+          { os: macos-15     },
           { os: macos-latest },
         ]
     steps:
@@ -526,7 +534,7 @@ jobs:
           { os: windows-2022, vc: "VC++ 2022", clangcl: 'true', },
           { os: windows-2019, vc: "VC++ 2019", clangcl: 'true', },
         ]
-        arch: [ x64, Win32, ARM, ARM64 ]
+        arch: [ x64, Win32, ARM64 ]
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

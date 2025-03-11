@@ -52,6 +52,7 @@ tests/unicode_test*
 
 # editor artifacts
 .clang_complete
+.clangd
 *.swp
 .vscode/
 .vs/

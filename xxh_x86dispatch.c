@@ -368,7 +368,7 @@ static xxh_u64 XXH_xgetbv(void)
  * @return The best @ref XXH_VECTOR implementation.
  * @see XXH_VECTOR_TYPES
  */
-static int XXH_featureTest(void)
+int XXH_featureTest(void)
 {
     xxh_u32 abcd[4];
     xxh_u32 max_leaves;

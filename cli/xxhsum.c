@@ -584,18 +584,18 @@ typedef struct {
 } ParseFileReport;
 
 typedef struct {
-    const char*     inFileName;
-    FILE*           inFile;
-    int             lineMax;
-    char*           lineBuf;
-    size_t          blockSize;
-    char*           blockBuf;
-    XSUM_U32        strictMode;
-    XSUM_U32        statusOnly;
-    XSUM_U32        ignoreMissing;
-    XSUM_U32        warn;
-    XSUM_U32        quiet;
-    XSUM_U32        algoBitmask;
+    const char*  inFileName;
+    FILE*        inFile;
+    int          lineMax;
+    char*        lineBuf;
+    size_t       blockSize;
+    char*        blockBuf;
+    int          strictMode;
+    int          statusOnly;
+    int          ignoreMissing;
+    int          warn;
+    int          quiet;
+    XSUM_U32     algoBitmask;
     ParseFileReport report;
 } ParseFileArg;
 
@@ -1022,11 +1022,11 @@ static void XSUM_parseFile1(ParseFileArg* XSUM_parseFileArg, int rev)
  */
 static int XSUM_checkFile(const char* inFileName,
                           const Display_endianness displayEndianness,
-                          XSUM_U32 strictMode,
-                          XSUM_U32 statusOnly,
-                          XSUM_U32 ignoreMissing,
-                          XSUM_U32 warn,
-                          XSUM_U32 quiet,
+                          int strictMode,
+                          int statusOnly,
+                          int ignoreMissing,
+                          int warn,
+                          int quiet,
                           XSUM_U32 algoBitmask)
 {
     int result = 0;
@@ -1119,11 +1119,11 @@ static int XSUM_checkFile(const char* inFileName,
 
 static int XSUM_checkFiles(const char* fnList[], int fnTotal,
                            const Display_endianness displayEndianness,
-                           XSUM_U32 strictMode,
-                           XSUM_U32 statusOnly,
-                           XSUM_U32 ignoreMissing,
-                           XSUM_U32 warn,
-                           XSUM_U32 quiet,
+                           int strictMode,
+                           int statusOnly,
+                           int ignoreMissing,
+                           int warn,
+                           int quiet,
                            XSUM_U32 algoBitmask)
 {
     int ok = 1;
@@ -1286,9 +1286,9 @@ static int XSUM_generateFile(const char* inFileName,
     AlgoSelected hashType,
     Display_endianness displayEndianness,
     Display_convention convention,
-    XSUM_U32 statusOnly,
-    XSUM_U32 ignoreMissing,
-    XSUM_U32 warn)
+    int statusOnly,
+    int ignoreMissing,
+    int warn)
 {
     int result = 0;
     FILE* inFile = NULL;
@@ -1365,9 +1365,9 @@ static int XSUM_generateFiles(const char* fnList[], int fnTotal,
     AlgoSelected hashType,
     Display_endianness displayEndianness,
     Display_convention convention,
-    XSUM_U32 statusOnly,
-    XSUM_U32 ignoreMissing,
-    XSUM_U32 warn)
+    int statusOnly,
+    int ignoreMissing,
+    int warn)
 {
     int ok = 1;
 
@@ -1396,14 +1396,14 @@ static int XSUM_usage(const char* exename)
     XSUM_log( "Usage: %s [options] [files] \n\n", exename);
     XSUM_log( "When no filename provided or when '-' is provided, uses stdin as input. \n");
     XSUM_log( "\nOptions: \n");
-    XSUM_log( "  -H#              select an xxhash algorithm (default: %i) \n", (int)g_defaultAlgo);
-    XSUM_log( "                   0: XXH32 \n");
-    XSUM_log( "                   1: XXH64 \n");
-    XSUM_log( "                   2: XXH128 (also called XXH3_128bits) \n");
-    XSUM_log( "                   3: XXH3 (also called XXH3_64bits) \n");
-    XSUM_log( "  -c, --check      read xxHash checksum from [files] and check them \n");
-    XSUM_log( "      --files-from generate hashes for files listed in [files] \n");
-    XSUM_log( "  -h, --help       display a long help page about advanced options \n");
+    XSUM_log( "  -H#             select an xxhash algorithm (default: %i) \n", (int)g_defaultAlgo);
+    XSUM_log( "                  0: XXH32 \n");
+    XSUM_log( "                  1: XXH64 \n");
+    XSUM_log( "                  2: XXH128 (also called XXH3_128bits) \n");
+    XSUM_log( "                  3: XXH3 (also called XXH3_64bits) \n");
+    XSUM_log( "  -c, --check     read xxHash checksum from [files] and check them \n");
+    XSUM_log( "      --filelist  generate hashes for files listed in [files] \n");
+    XSUM_log( "  -h, --help      display a long help page about advanced options \n");
     return 0;
 }
 
@@ -1504,12 +1504,13 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
 {
     int i, filenamesStart = 0;
     const char* const exename = XSUM_lastNameFromPath(argv[0]);
-    XSUM_U32 benchmarkMode = 0;
-    XSUM_U32 fileCheckMode = 0;
-    XSUM_U32 strictMode    = 0;
-    XSUM_U32 statusOnly    = 0;
-    XSUM_U32 warn          = 0;
-    XSUM_U32 ignoreMissing = 0;
+    int benchmarkMode = 0;
+    int fileCheckMode = 0;
+    int readFilenamesMode = 0;
+    int strictMode    = 0;
+    int statusOnly    = 0;
+    int warn          = 0;
+    int ignoreMissing = 0;
     XSUM_U32 algoBitmask   = algo_bitmask_all;
     int explicitStdin = 0;
     XSUM_U32 selectBenchIDs= 0;  /* 0 == use default k_testIDs_default, kBenchAll == bench all */
@@ -1531,7 +1532,8 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
         assert(argument != NULL);
 
         if (!strcmp(argument, "--check")) { fileCheckMode = 1; continue; }
-        if (!strcmp(argument, "--files-from")) { fileCheckMode = 2; continue; }
+        if (!strcmp(argument, "--files-from")) { readFilenamesMode = 1; continue; }
+        if (!strcmp(argument, "--filelist")) { readFilenamesMode = 1; continue; }
         if (!strcmp(argument, "--benchmark-all")) { benchmarkMode = 1; selectBenchIDs = kBenchAll; continue; }
         if (!strcmp(argument, "--bench-all")) { benchmarkMode = 1; selectBenchIDs = kBenchAll; continue; }
         if (!strcmp(argument, "--quiet")) { XSUM_logLevel--; continue; }
@@ -1555,7 +1557,7 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
         }
 
         /* command selection */
-        argument++;   /* note: *argument=='-' */
+        argument++;   /* note: argument[0] was =='-' */
         if (*argument == 0) explicitStdin = 1;
 
         while (*argument != 0) {
@@ -1595,7 +1597,7 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
 
             /* Generate hash mode (tar style short form of --files-from)
             case 'T':
-                fileCheckMode = 2;
+                readFilenamesMode = 2;
                 argument++;
                 break; */
 
@@ -1660,12 +1662,16 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
         return XSUM_badusage(exename);
 
     if (filenamesStart==0) filenamesStart = argc;
-    if (fileCheckMode == 1) {
+
+    if (fileCheckMode) {
         return XSUM_checkFiles(argv+filenamesStart, argc-filenamesStart,
                           displayEndianness, strictMode, statusOnly, ignoreMissing, warn, (XSUM_logLevel < 2) /*quiet*/, algoBitmask);
-    } else if (fileCheckMode == 2) {
-        return XSUM_generateFiles(argv + filenamesStart, argc - filenamesStart, algo, displayEndianness, convention, statusOnly, ignoreMissing, warn);
-    } else {
-        return XSUM_hashFiles(argv+filenamesStart, argc-filenamesStart, algo, displayEndianness, convention);
     }
+
+    if (readFilenamesMode) {
+        return XSUM_generateFiles(argv + filenamesStart, argc - filenamesStart, algo, displayEndianness, convention, statusOnly, ignoreMissing, warn);
+    }
+
+    return XSUM_hashFiles(argv+filenamesStart, argc-filenamesStart, algo, displayEndianness, convention);
+
 }

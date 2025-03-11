@@ -120,6 +120,7 @@ if(XXHASH_BUILD_XXHSUM)
     list(APPEND XXHSUM_SOURCES "${XXHASH_DIR}/xxh_x86dispatch.c")
   endif()
   list(APPEND XXHSUM_SOURCES "${XXHSUM_DIR}/xxhsum.c"
+                             "${XXHSUM_DIR}/xsum_arch.c"
                              "${XXHSUM_DIR}/xsum_os_specific.c"
                              "${XXHSUM_DIR}/xsum_output.c"
                              "${XXHSUM_DIR}/xsum_sanity_check.c"

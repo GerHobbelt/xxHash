@@ -36,9 +36,6 @@ As xxHash is a fast non-cryptographic checksum algorithm,
 OPTIONS
 -------
 
-* `-V`, `--version`:
-  Displays xxhsum version and exits
-
 * `-H`*HASHTYPE*:
   Hash selection. *HASHTYPE* means `0`=XXH32, `1`=XXH64, `2`=XXH128, `3`=XXH3.
   Alternatively, *HASHTYPE* `32`=XXH32, `64`=XXH64, `128`=XXH128.
@@ -54,36 +51,42 @@ OPTIONS
   Set output hexadecimal checksum value as little endian convention.
   By default, value is displayed as big endian.
 
+* `-V`, `--version`:
+  Displays xxhsum version and exits
+
 * `-h`, `--help`:
   Displays help and exits
 
-### The following options are useful only when using lists in *FILE* (--check and --files-from):
+### Advanced file input options
+
+* `--files-from`, `--filelist` *FILE*:
+  Read filenames from *FILE* and generate hashes for them.
+  `stdin` is also a valid way to provide filenames (when no *FILE* or `-` provided).
+  Valid format is one filename per line, which can include embedded spaces, etc with no need for quotes, escapes, etc.
+  A line commencing with '\\' will enable the convention used in the encoding of filenames against output hashes,
+  whereby subsequent \\\\, \n and \r seqeuences are converted to the single
+  character 0x5C, 0x0A and 0x0D respectively.
+
+### The following options are useful only for checksum verification:
 
 * `-c`, `--check` *FILE*:
   Read xxHash sums from *FILE* and check them
 
-* `--files-from` *FILE*:
-  Read filenames from *FILE* and generate hashes for them.
-  Valid *FILE*s have one filename per line, which can include embedded spaces, etc with no need for quotes, escapes, etc.
-  Note that a line commencing with '\\' will enable the convention used in the encoding of filenames against output hashes,
-  whereby subsequent \\\\, \n and \r seqeuences are converted to the single
-  character 0x5C, 0x0A and 0x0D respectively.
-
-* `-q`, `--quiet`:
-   Don't print OK for each successfully verified hash (only for --check)
-
 * `--strict`:
-  Return an error code if any line in *FILE** is invalid,
+  Return an error code if any line in *FILE* is invalid,
   not just if some checksums are wrong.
   This policy is disabled by default,
   though UI will prompt an informational message
   if any line in the file is detected invalid.
 
-* `--status`:
-  Don't output anything. Status code shows success.
-
 * `-w`, `--warn`:
   Emit a warning message about each improperly formatted line in *FILE*.
+
+* `-q`, `--quiet`:
+   Don't print OK for each successfully verified hash
+
+* `--status`:
+  Don't output anything. Only generate a Status code to show success.
 
 ### The following options are useful only benchmark purpose:
 
