@@ -638,7 +638,7 @@ jobs:
           PATH=/mingw32/bin:$PATH /mingw32/bin/mingw32-make.exe clean test MOREFLAGS=-Werror
           PATH=/mingw32/bin:$PATH /mingw32/bin/mingw32-make.exe -C tests/bench
           # Abort if result of "file ./xxhsum.exe" doesn't contain '80386'.
-          # Expected output is "./xxhsum.exe: PE32 executable (console) Intel 80386, for MS Windows"
+          # Expected output is "./xxhsum.exe: PE32 executable (console) Intel i386, for MS Windows"
           file ./xxhsum.exe
-          file ./xxhsum.exe | grep -q '80386' || $(exit 1)
+          file ./xxhsum.exe | grep -q '386' || $(exit 1)
           ./xxhsum.exe --version
