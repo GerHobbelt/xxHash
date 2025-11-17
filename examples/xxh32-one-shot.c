@@ -56,7 +56,7 @@ void my_print_xxh32(XXH32_hash_t hashValue)
 }
 
 // Compute XXH32 variant hash
-void my_compute_xxh32_one_shot()
+void my_compute_xxh32_one_shot(void)
 {
     // Setup data
     const char *const data            = "xxHash - Extremely fast hash algorithm";

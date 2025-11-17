@@ -55,7 +55,7 @@ void my_print_xxh128(XXH128_hash_t hashValue)
 }
 
 // Compute XXH3 128-bit variant hash
-void my_compute_xxh3_128bits_one_shot()
+void my_compute_xxh3_128bits_one_shot(void)
 {
     // Setup data
     const char *const data            = "xxHash - Extremely fast hash algorithm";

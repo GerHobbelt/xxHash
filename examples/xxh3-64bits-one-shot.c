@@ -55,7 +55,7 @@ void my_print_xxh64(XXH64_hash_t hashValue)
 }
 
 // Compute XXH3 64-bit variant hash
-void my_compute_xxh3_64bits_one_shot()
+void my_compute_xxh3_64bits_one_shot(void)
 {
     // Setup data
     const char *const data            = "xxHash - Extremely fast hash algorithm";
