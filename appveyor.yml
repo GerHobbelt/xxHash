@@ -88,7 +88,7 @@ build_script:
     # note 3: clang requires C++14 to compile sort because its own code contains c++14-only code
 
   - if [%COMPILER%]==[visual] (
-      cd cmake_unofficial &&
+      cd build/cmake &&
       cmake . -DCMAKE_BUILD_TYPE=Release -A %ARCH% -DXXHASH_C_FLAGS="/WX" &&
       cmake --build . --config Release
     )

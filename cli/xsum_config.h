@@ -170,11 +170,7 @@
 #endif /* XSUM_WIN32_USE_WCHAR */
 
 #ifndef XSUM_API
-#  ifdef XXH_INLINE_ALL
-#    define XSUM_API static
-#  else
-#    define XSUM_API
-#  endif
+#  define XSUM_API
 #endif
 
 #ifndef XSUM_NO_TESTS

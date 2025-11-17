@@ -35,12 +35,6 @@
 #include "xsum_output.h"       /* XSUM_output */
 #include "xsum_sanity_check.h" /* XSUM_sanityCheck */
 #include "xsum_bench.h"        /* NBLOOPS_DEFAULT */
-#ifdef XXH_INLINE_ALL
-#  include "xsum_os_specific.c"
-#  include "xsum_output.c"
-#  include "xsum_sanity_check.c"
-#  include "xsum_bench.c"
-#endif
 
 /* ************************************
  *  Includes

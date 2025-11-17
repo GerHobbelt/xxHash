@@ -64,7 +64,7 @@ OPTIONS
   `stdin` is also a valid way to provide filenames (when no *FILE* or `-` provided).
   Valid format is one filename per line, which can include embedded spaces, etc with no need for quotes, escapes, etc.
   A line commencing with '\\' will enable the convention used in the encoding of filenames against output hashes,
-  whereby subsequent \\\\, \n and \r seqeuences are converted to the single
+  whereby subsequent \\\\, \n and \r sequences are converted to the single
   character 0x5C, 0x0A and 0x0D respectively.
 
 ### The following options are useful only for checksum verification:

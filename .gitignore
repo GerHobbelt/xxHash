@@ -32,8 +32,10 @@ fuzzer
 *.wasm
 *.js
 
-# CMake build directories
-build*/
+# build artifacts
+cachedObjs/
+cmakebuild/
+
 
 # project managers artifacts
 .projectile

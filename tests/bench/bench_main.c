@@ -110,7 +110,7 @@ static int longCommandWArg(const char** stringPtr, const char* longCommand)
 #  define SMALL_SIZE_MIN_DEFAULT   1
 #endif
 #ifndef SMALL_SIZE_MAX_DEFAULT
-#  define SMALL_SIZE_MAX_DEFAULT 127
+#  define SMALL_SIZE_MAX_DEFAULT  30
 #endif
 #ifndef LARGE_SIZELOG_MIN_DEFAULT
 #  define LARGE_SIZELOG_MIN_DEFAULT   9

@@ -162,6 +162,8 @@
 #  else
 #    define XSUM_ARCH "wasm/asmjs"
 #  endif
+#elif defined(__riscv)
+#    define XSUM_ARCH "riscv"
 #elif defined(__loongarch_lp64)
 #  if defined(__loongarch_asx)
 #    define XSUM_ARCH "loongarch64 + lasx"
