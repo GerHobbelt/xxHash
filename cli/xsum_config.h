@@ -50,6 +50,10 @@
 #  endif
 #endif
 
+#if defined(_MSC_VER)
+#  pragma warning(disable : 4127) /* disable: C4127: conditional expression is constant */
+#endif
+
 /* Under Linux at least, pull in the *64 commands */
 #ifndef _LARGEFILE64_SOURCE
 #  define _LARGEFILE64_SOURCE

@@ -52,8 +52,8 @@ benchHash_avx2: CXXFLAGS += -mavx2
 benchHash_avx512: CFLAGS   += -mavx512f
 benchHash_avx512: CXXFLAGS += -mavx512f
 
-benchHash_rvv: CFLAGS   += -march=rv64gcv -O3
-benchHash_rvv: CXXFLAGS += -march=rv64gcv -O3
+benchHash_rvv: CFLAGS   += -march=rv64gcv -O2
+benchHash_rvv: CXXFLAGS += -march=rv64gcv -O2
 
 benchHash_hw: CPPFLAGS += -DHARDWARE_SUPPORT
 benchHash_hw: CFLAGS   += -mavx2 -maes

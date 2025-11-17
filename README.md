@@ -170,11 +170,13 @@ The following macros can be set at compilation time to modify `libxxhash`'s beha
 - `XXH_PREFETCH_DIST` : select prefetching distance. For close-to-metal adaptation to specific hardware platforms. XXH3 only.
 - `XXH_NO_PREFETCH` : disable prefetching. Some platforms or situations may perform better without prefetching. XXH3 only.
 
+#### Build modifiers for `xxhsum` CLI
+- `XXH_1ST_SPEED_TARGET` : select an initial speed target, expressed in MB/s, for the first speed test in benchmark mode. Benchmark will adjust the target at subsequent iterations, but the first test is made "blindly" by targeting this speed. Currently conservatively set to 10 MB/s, to support very slow (emulated) platforms.
+
 #### Makefile variables
 When compiling the Command Line Interface `xxhsum` using `make`, the following environment variables can also be set :
 - `DISPATCH=1` : use `xxh_x86dispatch.c`, select at runtime between `scalar`, `sse2`, `avx2` or `avx512` instruction set. This option is only valid for `x86`/`x64` systems. It is enabled by default when target `x86`/`x64` is detected. It can be forcefully turned off using `DISPATCH=0`.
 - `LIBXXH_DISPATCH=1` : same idea, implemented a runtime vector extension detector, but within `libxxhash`. This parameter is disabled by default. When enabled (only valid for `x86`/`x64` systems), new symbols published in `xxh_x86dispatch.h` become accessible. At the time of this writing, it's required to include `xxh_x86dispatch.h` in order to access the symbols with runtime vector extension detection.
-- `XXH_1ST_SPEED_TARGET` : select an initial speed target, expressed in MB/s, for the first speed test in benchmark mode. Benchmark will adjust the target at subsequent iterations, but the first test is made "blindly" by targeting this speed. Currently conservatively set to 10 MB/s, to support very slow (emulated) platforms.
 - `NODE_JS=1` : When compiling `xxhsum` for Node.js with Emscripten, this links the `NODERAWFS` library for unrestricted filesystem access and patches `isatty` to make the command line utility correctly detect the terminal. This does make the binary specific to Node.js.
 
 ### Building xxHash - Using vcpkg

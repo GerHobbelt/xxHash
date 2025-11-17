@@ -50,7 +50,7 @@ C_SRCDIRS = . .. ../cli
 include ../build/make/multiconf.make
 
 .PHONY: all
-all: test
+all: test test_alias
 
 .PHONY: test
 test: test_multiInclude test_unicode test_sanity
@@ -126,6 +126,10 @@ sanity_test_vectors.h: sanity_test_vectors_generator
 
 multiInclude_withxxhash:
 $(eval $(call c_program,multiInclude_withxxhash,multiInclude.o xxhash.o))
+
+test_alias: CPPFLAGS += -I..
+test_alias: CFLAGS += -O3 -Werror
+$(eval $(call c_program,test_alias,test_alias.o))
 
 .PHONY: clean
 clean:
