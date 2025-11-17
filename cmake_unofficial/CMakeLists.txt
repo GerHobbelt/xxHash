@@ -5,7 +5,7 @@
 #
 # For details, see <https://creativecommons.org/publicdomain/zero/1.0/>.
 
-cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
 
 set(XXHASH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
@@ -71,12 +71,9 @@ mark_as_advanced(XXHASH_BUNDLED_MODE)
 include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON "NOT XXHASH_BUNDLED_MODE" OFF)
 
-if("${CMAKE_VERSION}" VERSION_LESS "3.10")
-  # Can not enable DISPATCH mode since it fails to recognize architecture.
-else()
-  CMAKE_HOST_SYSTEM_INFORMATION(RESULT PLATFORM QUERY OS_PLATFORM)
-  message(STATUS "Architecture: ${PLATFORM}")
-endif()
+# detect architecture for DISPATCH mode
+CMAKE_HOST_SYSTEM_INFORMATION(RESULT PLATFORM QUERY OS_PLATFORM)
+message(STATUS "Architecture: ${PLATFORM}")
 
 # libxxhash
 if((DEFINED DISPATCH) AND (DEFINED PLATFORM))

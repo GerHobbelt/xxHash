@@ -1,6 +1,6 @@
 # ################################################################
 # xxHash Makefile
-# Copyright (C) 2012-2021 Yann Collet
+# Copyright (C) 2012-2024 Yann Collet
 #
 # GPL v2 License
 #
@@ -151,7 +151,7 @@ $(LIBXXH): LDFLAGS += -shared
 ifeq (,$(filter Windows%,$(OS)))
 $(LIBXXH): CFLAGS += -fPIC
 endif
-ifeq ($(DISPATCH),1)
+ifeq ($(LIBXXH_DISPATCH),1)
 $(LIBXXH): xxh_x86dispatch.c
 endif
 $(LIBXXH): xxhash.c
@@ -361,7 +361,7 @@ clangtest: clean
 .PHONY: gcc-og-test
 gcc-og-test: clean
 	@echo ---- test gcc -Og compilation ----
-	CFLAGS="-Og -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror -fPIC" MOREFLAGS="-Werror" $(MAKE) all
+	CFLAGS="-Og -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror -fPIC" CPPFLAGS="-DXXH_NO_INLINE_HINTS" MOREFLAGS="-Werror" $(MAKE) all
 
 .PHONY: cxxtest
 cxxtest: clean
@@ -565,7 +565,7 @@ else
 PKGCONFIGDIR ?= $(LIBDIR)/pkgconfig
 endif
 
-ifneq (,$(filter $(UNAME),OpenBSD FreeBSD NetBSD DragonFly SunOS))
+ifneq (,$(filter $(UNAME),OpenBSD NetBSD DragonFly SunOS))
 MANDIR  ?= $(PREFIX)/man/man1
 else
 MANDIR  ?= $(man1dir)
@@ -632,7 +632,7 @@ install_libxxhash.includes:
 	$(Q)$(INSTALL) -d -m 755 $(DESTDIR)$(INCLUDEDIR)   # includes
 	$(Q)$(INSTALL_DATA) xxhash.h $(DESTDIR)$(INCLUDEDIR)
 	$(Q)$(INSTALL_DATA) xxh3.h $(DESTDIR)$(INCLUDEDIR) # for compatibility, will be removed in v0.9.0
-ifeq ($(DISPATCH),1)
+ifeq ($(LIBXXH_DISPATCH),1)
 	$(Q)$(INSTALL_DATA) xxh_x86dispatch.h $(DESTDIR)$(INCLUDEDIR)
 endif
 

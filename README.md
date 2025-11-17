@@ -141,6 +141,9 @@ The following macros can be set at compilation time to modify `libxxhash`'s beha
                    But one-shot hashing (like `XXH32()`) or streaming using statically allocated states
                    still work as expected.
                    This build flag is useful for embedded environments without dynamic allocation.
+- `XXH_memcpy`, `XXH_memset`, `XXH_memcmp` : redirect `memcpy()`, `memset()` and `memcmp()` to some user-selected symbol at compile time.
+                   Redirecting all 3 removes the need to include `<string.h>` standard library.
+- `XXH_NO_EXTERNC_GUARD`: When `xxhash.h` is compiled in C++ mode, removes the `extern "C" { .. }` block guard.
 - `XXH_DEBUGLEVEL` : When set to any value >= 1, enables `assert()` statements.
                      This (slightly) slows down execution, but may help finding bugs during debugging sessions.
 
@@ -157,7 +160,7 @@ The following macros can be set at compilation time to modify `libxxhash`'s beha
                          Defining this macro to 1 will mark all internal functions as `static`, allowing the compiler to decide whether to inline a function or not.
                          This is very useful when optimizing for smallest binary size,
                          and is automatically defined when compiling with `-O0`, `-Os`, `-Oz`, or `-fno-inline` on GCC and Clang.
-                         This might also increase performance depending on compiler and architecture.
+                         It may also be required to successfully compile using `-Og`, depending on compiler version.
 - `XXH_SIZE_OPT`: `0`: default, optimize for speed
                   `1`: default for `-Os` and `-Oz`: disables some speed hacks for size optimization
                   `2`: makes code as small as possible, performance may cry
@@ -169,7 +172,8 @@ The following macros can be set at compilation time to modify `libxxhash`'s beha
 
 #### Makefile variables
 When compiling the Command Line Interface `xxhsum` using `make`, the following environment variables can also be set :
-- `DISPATCH=1` : use `xxh_x86dispatch.c`, to automatically select between `scalar`, `sse2`, `avx2` or `avx512` instruction set _at runtime_, depending on local host. This option is only valid for `x86`/`x64` systems.
+- `DISPATCH=1` : use `xxh_x86dispatch.c`, select at runtime between `scalar`, `sse2`, `avx2` or `avx512` instruction set. This option is only valid for `x86`/`x64` systems. It is enabled by default when target `x86`/`x64` is detected. It can be forcefully turned off using `DISPATCH=0`.
+- `LIBXXH_DISPATCH=1` : same idea, implemented a runtime vector extension detector, but within `libxxhash`. This parameter is disabled by default. When enabled (only valid for `x86`/`x64` systems), new symbols published in `xxh_x86dispatch.h` become accessible. At the time of this writing, it's required to include `xxh_x86dispatch.h` in order to access the symbols with runtime vector extension detection.
 - `XXH_1ST_SPEED_TARGET` : select an initial speed target, expressed in MB/s, for the first speed test in benchmark mode. Benchmark will adjust the target at subsequent iterations, but the first test is made "blindly" by targeting this speed. Currently conservatively set to 10 MB/s, to support very slow (emulated) platforms.
 - `NODE_JS=1` : When compiling `xxhsum` for Node.js with Emscripten, this links the `NODERAWFS` library for unrestricted filesystem access and patches `isatty` to make the command line utility correctly detect the terminal. This does make the binary specific to Node.js.
 

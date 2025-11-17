@@ -149,17 +149,17 @@ jobs:
       run: |
         CFLAGS="-Os -DXXH_SIZE_OPT=2 -Wall -Wextra -Werror" make clean xxhsum
 
-    - name: noxxh3test
+    - name: XXH_NO_XXH3
       if: always()
       run: |
         # check library can be compiled with XXH_NO_XXH3, resulting in no XXH3_* symbol
         make clean noxxh3test
 
-    - name: nostreamtest
+    - name: XXH_NO_STREAM
       if: always()
       run: |
         # check library can be compiled with XXH_NO_STREAM, resulting in no streaming symbols
-        make clean noxxh3test
+        make clean nostreamtest
 
     - name: make avx512f
       run: |
@@ -343,26 +343,26 @@ jobs:
         cat build/libxxhash.pc | grep "libdir=/usr/lib"
         cat build/libxxhash.pc | grep "includedir=/usr/include"
 
-    - name: cmake minimum version v3.5 test
+    - name: cmake minimum version v3.10 test
       run: |
         mkdir -p cmake_bins
         cd cmake_bins
-        wget https://cmake.org/files/v3.5/cmake-3.5.0-Linux-i386.tar.gz
-        tar xzf cmake-3.5.0-Linux-i386.tar.gz
+        wget https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz
+        tar xzf cmake-3.10.0-Linux-x86_64.tar.gz
         cd ../cmake_unofficial
         rm -rf build
         pwd
         ls
         mkdir -p build
         cd build
-        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake --version
-        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake ..
-        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake --build .
+        ../../cmake_bins/cmake-3.10.0-Linux-x86_64/bin/cmake --version
+        ../../cmake_bins/cmake-3.10.0-Linux-x86_64/bin/cmake ..
+        ../../cmake_bins/cmake-3.10.0-Linux-x86_64/bin/cmake --build .
         mkdir -p test_install_dir
-        DESTDIR=test_install_dir ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake --install .
+        DESTDIR=test_install_dir ../../cmake_bins/cmake-3.10.0-Linux-x86_64/bin/cmake --install .
         rm -rf *
-        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake -DCMAKE_BUILD_TYPE=Debug ..
-        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake --build .
+        ../../cmake_bins/cmake-3.10.0-Linux-x86_64/bin/cmake -DCMAKE_BUILD_TYPE=Debug ..
+        ../../cmake_bins/cmake-3.10.0-Linux-x86_64/bin/cmake --build .
 
 
 
@@ -624,7 +624,7 @@ jobs:
       - name: mingw64
         if: ${{ matrix.msystem == 'mingw64' }}
         run: |
-          PATH=/mingw64/bin:$PATH /mingw32/bin/mingw32-make clean test MOREFLAGS=-Werror
+          PATH=/mingw64/bin:$PATH /mingw32/bin/mingw32-make clean test gcc-og-test MOREFLAGS=-Werror
           PATH=/mingw64/bin:$PATH /mingw32/bin/mingw32-make -C tests/bench
           # Abort if result of "file ./xxhsum.exe" doesn't contain 'x86-64'.
           # Expected output is "./xxhsum.exe: PE32+ executable (console) x86-64, for MS Windows"

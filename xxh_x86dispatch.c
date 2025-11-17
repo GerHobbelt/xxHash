@@ -40,9 +40,9 @@
  *
  * Optional add-on.
  *
- * **Compile this file with the default flags for your target.** Do not compile
- * with flags like `-mavx*`, `-march=native`, or `/arch:AVX*`, there will be
- * an error. See @ref XXH_X86DISPATCH_ALLOW_AVX for details.
+ * **Compile this file with the default flags for your target.**
+ * Note that compiling with flags like `-mavx*`, `-march=native`, or `/arch:AVX*`
+ * will make the resulting binary incompatible with cpus not supporting the requested instruction set.
  *
  * @defgroup dispatch x86 Dispatcher
  * @{
@@ -56,47 +56,19 @@ extern "C" {
 #  error "Dispatching is currently only supported on x86 and x86_64."
 #endif
 
-/*!
- * @def XXH_X86DISPATCH_ALLOW_AVX
- * @brief Disables the AVX sanity check.
- *
- * xxh_x86dispatch.c is intended to be compiled for the minimum target, and
- * it selectively enables SSE2, AVX2, and AVX512 when it is needed.
- *
- * Compiling with options like `-mavx*`, `-march=native`, or `/arch:AVX*`
- * _globally_ will always enable this feature, and therefore makes it
- * undefined behavior to execute on any CPU without said feature.
- *
- * Even if the source code isn't directly using AVX intrinsics in a function,
- * the compiler can still generate AVX code from autovectorization and by
- * "upgrading" SSE2 intrinsics to use the VEX prefixes (a.k.a. AVX128).
- *
- * Define XXH_X86DISPATCH_ALLOW_AVX to ignore this check,
- * thus accepting that the produced binary will not work correctly
- * on any CPU with less features than the ones stated at compilation time.
- */
-#ifdef XXH_DOXYGEN
-#  define XXH_X86DISPATCH_ALLOW_AVX
-#endif
-
-#if defined(__AVX__) && !defined(XXH_X86DISPATCH_ALLOW_AVX)
-#  error "Error: if xxh_x86dispatch.c is compiled with AVX enabled, the resulting binary will crash on sse2-only cpus !! " \
-         "If you nonetheless want to do that, please enable the XXH_X86DISPATCH_ALLOW_AVX build variable"
-#else
-#  pragma message("SHOULD NOT compile xxh_x86dispatch.c with AVX enabled! See the comment above. You have defined XXH_X86DISPATCH_ALLOW_AVX so we assume you know what you're doing!")
-#endif
-
-/*!
- * @def XXH_HAS_INCLUDE
- * @brief Checks whether a given header file has already been included. Wrapper for compiler-specific `__has_include(x)`.
- */
+/*! @cond Doxygen ignores this part */
 #ifndef XXH_HAS_INCLUDE
 #  ifdef __has_include
-#    define XXH_HAS_INCLUDE(x) __has_include(x)
+/*
+ * Not defined as XXH_HAS_INCLUDE(x) (function-like) because
+ * this causes segfaults in Apple Clang 4.2 (on Mac OS X 10.7 Lion)
+ */
+#    define XXH_HAS_INCLUDE __has_include
 #  else
 #    define XXH_HAS_INCLUDE(x) 0
 #  endif
 #endif
+/*! @endcond */
 
 /*!
  * @def XXH_DISPATCH_SCALAR
@@ -660,7 +632,7 @@ typedef XXH128_hash_t (*XXH3_dispatchx86_hashLong128_default)(XXH_NOESCAPE const
 
 typedef XXH128_hash_t (*XXH3_dispatchx86_hashLong128_withSeed)(XXH_NOESCAPE const void* XXH_RESTRICT, size_t, XXH64_hash_t);
 
-typedef XXH128_hash_t (*XXH3_dispatchx86_hashLong128_withSecret)(XXH_NOESCAPE const void* XXH_RESTRICT, size_t, const void* XXH_RESTRICT, size_t);
+typedef XXH128_hash_t (*XXH3_dispatchx86_hashLong128_withSecret)(XXH_NOESCAPE const void* XXH_RESTRICT, size_t, XXH_NOESCAPE const void* XXH_RESTRICT, size_t);
 
 typedef struct {
     XXH3_dispatchx86_hashLong128_default    hashLong128_default;

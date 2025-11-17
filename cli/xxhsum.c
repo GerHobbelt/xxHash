@@ -426,6 +426,7 @@ static LineStatus XSUM_hashFile(const char* fileName,
         }
         inFile = XSUM_fopen( fileName, "rb" );
         if (inFile==NULL) {
+            XSUM_log("Error: unable to open input\n");
             return LineStatus_failedToOpen;
     }   }
 
@@ -1396,22 +1397,23 @@ static int XSUM_usage(const char* exename)
     XSUM_log( "Usage: %s [options] [files] \n\n", exename);
     XSUM_log( "When no filename provided or when '-' is provided, uses stdin as input. \n");
     XSUM_log( "\nOptions: \n");
-    XSUM_log( "  -H#             select an xxhash algorithm (default: %i) \n", (int)g_defaultAlgo);
-    XSUM_log( "                  0: XXH32 \n");
-    XSUM_log( "                  1: XXH64 \n");
-    XSUM_log( "                  2: XXH128 (also called XXH3_128bits) \n");
-    XSUM_log( "                  3: XXH3 (also called XXH3_64bits) \n");
-    XSUM_log( "  -c, --check     read xxHash checksum from [files] and check them \n");
-    XSUM_log( "      --filelist  generate hashes for files listed in [files] \n");
-    XSUM_log( "  -h, --help      display a long help page about advanced options \n");
+    XSUM_log( "  -H#                  select an xxhash algorithm (default: %i) \n", (int)g_defaultAlgo);
+    XSUM_log( "                       0: XXH32 \n");
+    XSUM_log( "                       1: XXH64 \n");
+    XSUM_log( "                       2: XXH128 (also called XXH3_128bits) \n");
+    XSUM_log( "                       3: XXH3 (also called XXH3_64bits) \n");
+    XSUM_log( "  -c, --check          read xxHash checksum from [files] and check them \n");
+    XSUM_log( "      --files-from     generate hashes for files listed in [files] \n");
+    XSUM_log( "      --filelist       generate hashes for files listed in [files] \n");
+    XSUM_log( "  -                    forces stdin as input, even if it's the console \n");
+    XSUM_log( "  -h, --help           display a long help page about advanced options \n");
     return 0;
 }
-
 
 static int XSUM_usage_advanced(const char* exename)
 {
     XSUM_usage(exename);
-    XSUM_log( "\nAdvanced :\n");
+    XSUM_log( "\nAdvanced: \n");
     XSUM_log( "  -V, --version        Display version information \n");
     XSUM_log( "      --tag            Produce BSD-style checksum lines \n");
     XSUM_log( "      --little-endian  Checksum values use little endian convention (default: big endian) \n");
@@ -1658,8 +1660,10 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
     }
 
     /* Check if input is defined as console; trigger an error in this case */
-    if ( (filenamesStart==0) && XSUM_isConsole(stdin) && !explicitStdin)
-        return XSUM_badusage(exename);
+    if ( (filenamesStart==0) && XSUM_isConsole(stdin) && !explicitStdin) {
+        XSUM_log("No input provided \n");
+        return 1;
+    }
 
     if (filenamesStart==0) filenamesStart = argc;
 
