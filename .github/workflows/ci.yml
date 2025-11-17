@@ -237,7 +237,7 @@ jobs:
         actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
 
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v5
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ matrix.node-version }}
 
@@ -502,7 +502,6 @@ jobs:
       fail-fast: false  # 'false' means Don't stop matrix workflows even if some matrix failed.
       matrix:
         system: [
-          { os: macos-13     },
           { os: macos-14     },
           { os: macos-15     },
           { os: macos-latest },
