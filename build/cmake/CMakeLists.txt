@@ -80,7 +80,7 @@ include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON "NOT XXHASH_BUNDLED_MODE" OFF)
 
 # detect architecture for DISPATCH mode
-CMAKE_HOST_SYSTEM_INFORMATION(RESULT PLATFORM QUERY OS_PLATFORM)
+set(PLATFORM ${CMAKE_SYSTEM_PROCESSOR})
 message(STATUS "Architecture: ${PLATFORM}")
 
 # libxxhash
