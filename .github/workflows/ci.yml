@@ -623,8 +623,8 @@ jobs:
         $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
         $vsPath = & $vswhere -latest -property installationPath
         $dumpbin = Get-ChildItem "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" | Select-Object -Last 1
-        $imports = & $dumpbin.FullName /dependents C:\install\bin\xxhsum.exe
-        if ($imports -match "(?i)pathcch\.dll") { throw "xxhsum.exe imports pathcch.dll" }
+        $imports = & $dumpbin.FullName /imports C:\install\bin\xxhsum.exe
+        if ($imports -match "PathCch(Canonicalize|Combine)Ex") { throw "xxhsum.exe imports PathCch statically" }
 
     - name: Test Windows paths
       if: ${{ matrix.arch == 'x64' }}
@@ -652,6 +652,8 @@ jobs:
           [System.IO.Directory]::CreateDirectory("\\?\$directory") | Out-Null
           [System.IO.File]::WriteAllText("\\?\$file", "xxHash")
           C:\install\bin\xxhsum.exe $file
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          C:\install\bin\xxhsum.exe "\\?\$file"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         } finally {
           if ([System.IO.Directory]::Exists("\\?\$root")) {
@@ -752,6 +754,7 @@ jobs:
           file ./xxhsum.exe
           file ./xxhsum.exe | grep -q 'x86-64' || $(exit 1)
           ./xxhsum.exe --version
+          cmd.exe //d //c "xxhsum.exe *.c > nul"
           cmd.exe //d //c "set XXHSUM_EXE=%CD%\xxhsum.exe&& call tests\windows\00-test-all.bat"
 
       - name: mingw32
@@ -764,4 +767,5 @@ jobs:
           file ./xxhsum.exe
           file ./xxhsum.exe | grep -q '386' || $(exit 1)
           ./xxhsum.exe --version
+          cmd.exe //d //c "xxhsum.exe *.c > nul"
           cmd.exe //d //c "set XXHSUM_EXE=%CD%\xxhsum.exe&& call tests\windows\00-test-all.bat"

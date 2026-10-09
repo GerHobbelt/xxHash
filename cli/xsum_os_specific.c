@@ -161,6 +161,7 @@ int main(int argc, const char* argv[])
 
 #  define XSUM_PATHCCH_DO_NOT_NORMALIZE_SEGMENTS     0x00000008UL
 #  define XSUM_PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH 0x00000010UL
+#  define XSUM_LOAD_LIBRARY_SEARCH_SYSTEM32          0x00000800UL
 
 typedef HRESULT (WINAPI *XSUM_PathCchCanonicalizeExFn)(
     wchar_t*, size_t, const wchar_t*, ULONG);
@@ -189,15 +190,9 @@ static XSUM_PathCch const* XSUM_getPathCch(void)
     static XSUM_PathCch api = { NULL, NULL, NULL };
     static int initialized = 0;
     if (!initialized) {
-        static wchar_t const pathcch_dll[] = L"\\pathcch.dll";
-        wchar_t system_path[MAX_PATH];
-        UINT const system_path_len = GetSystemDirectoryW(system_path, MAX_PATH);
         XSUM_PathCchProc proc;
-        if (system_path_len > 0
-                && system_path_len + sizeof(pathcch_dll) / sizeof(pathcch_dll[0]) <= MAX_PATH) {
-            memcpy(system_path + system_path_len, pathcch_dll, sizeof(pathcch_dll));
-            api.module = LoadLibraryW(system_path);
-        }
+        api.module = LoadLibraryExW(L"api-ms-win-core-path-l1-1-0.dll", NULL,
+                                    XSUM_LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (api.module != NULL) {
             proc.proc = GetProcAddress(api.module, "PathCchCanonicalizeEx");
             api.canonicalize = proc.canonicalize;
@@ -263,16 +258,29 @@ static char* XSUM_narrowString(const wchar_t *str, int *lenOut)
 static wchar_t* XSUM_widenStringAsExtendedLengthPath(const char* path)
 {
     wchar_t* const wide_path = XSUM_widenString(path, NULL);  /* path in wchar_t */
-    size_t const path_len = strlen(path);
-    int const starts_with_extended_prefix = path_len >= 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\';
-    int const starts_with_device_prefix = path_len >= 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '.' && path[3] == '\\';
-    int const starts_with_drive = path_len >= 2
-        && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'))
-        && path[1] == ':';
-    int const starts_with_dos_absolute = starts_with_drive && path_len >= 3
-        && (path[2] == '\\' || path[2] == '/');
+    wchar_t* separator;
+    size_t path_len;
+    int starts_with_extended_prefix;
+    int starts_with_device_prefix;
+    int starts_with_drive;
+    int starts_with_dos_absolute;
+    int starts_with_unc_absolute;
 
     if (wide_path == NULL) return NULL;
+
+    /* Extended-length paths only accept backslashes as separators. */
+    for (separator = wide_path; *separator != L'\0'; ++separator) {
+        if (*separator == L'/') *separator = L'\\';
+    }
+
+    path_len = wcslen(wide_path);
+    starts_with_extended_prefix = path_len >= 4 && wcsncmp(wide_path, L"\\\\?\\", 4) == 0;
+    starts_with_device_prefix = path_len >= 4 && wcsncmp(wide_path, L"\\\\.\\", 4) == 0;
+    starts_with_drive = path_len >= 2
+        && ((wide_path[0] >= L'A' && wide_path[0] <= L'Z') || (wide_path[0] >= L'a' && wide_path[0] <= L'z'))
+        && wide_path[1] == L':';
+    starts_with_dos_absolute = starts_with_drive && path_len >= 3 && wide_path[2] == L'\\';
+    starts_with_unc_absolute = path_len >= 2 && wide_path[0] == L'\\' && wide_path[1] == L'\\';
 
     /* Extended-length and device paths already have explicit semantics. */
     if(starts_with_extended_prefix || starts_with_device_prefix) {
@@ -284,12 +292,14 @@ static wchar_t* XSUM_widenStringAsExtendedLengthPath(const char* path)
         size_t const size_in_wchars  = 32768; /* 32767 wchar_t + NUL */
         ULONG const path_flags = XSUM_PATHCCH_DO_NOT_NORMALIZE_SEGMENTS
                                | XSUM_PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH;
+        wchar_t* exl_path = NULL;
+
+        if(pathcch->module != NULL) {
+            exl_path = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
+        }
 
         /* exl_path : buffer for extended length path */
-        wchar_t* const exl_path = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
-        if(exl_path != NULL && pathcch->module != NULL) {
-            int const starts_with_unc_absolute = path_len >= 2 && path[0] == '\\' && path[1] == '\\';
-
+        if(exl_path != NULL) {
             /* If path starts with "\\" or "[A-Za-z]:\" */
             if(starts_with_unc_absolute || starts_with_dos_absolute) {
                 if(pathcch->canonicalize != NULL) {
@@ -299,17 +309,21 @@ static wchar_t* XSUM_widenStringAsExtendedLengthPath(const char* path)
                     }
                 }
             } else if(starts_with_drive) {
-                /* Resolve drive-relative paths using that drive's current directory. */
-                wchar_t* const abs_path = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
-                if(abs_path != NULL) {
-                    DWORD const n = GetFullPathNameW(wide_path, (DWORD)size_in_wchars, abs_path, NULL);
-                    if(n != 0 && n < size_in_wchars && pathcch->canonicalize != NULL) {
-                        HRESULT const hr = pathcch->canonicalize(exl_path, size_in_wchars, abs_path, path_flags);
+                wchar_t drive_path[3];
+                wchar_t* const drive_cwd = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
+                drive_path[0] = wide_path[0];
+                drive_path[1] = L':';
+                drive_path[2] = L'\0';
+                if(drive_cwd != NULL) {
+                    DWORD const n = GetFullPathNameW(drive_path, (DWORD)size_in_wchars, drive_cwd, NULL);
+                    if(n != 0 && n < size_in_wchars && pathcch->combine != NULL) {
+                        HRESULT const hr = pathcch->combine(exl_path, size_in_wchars,
+                                                           drive_cwd, wide_path + 2, path_flags);
                         if(SUCCEEDED(hr) && wcsncmp(exl_path, L"\\\\?\\", 4) == 0) {
                             result = exl_path;
                         }
                     }
-                    free(abs_path);
+                    free(drive_cwd);
                 }
             } else {
                 /* path is relative path */
