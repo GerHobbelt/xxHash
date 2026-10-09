@@ -5,7 +5,7 @@ set /a errorno=1
 set /a _E=8-1
 set "__=set /a _E+=1"
 
-!__! && for /f "delims=. tokens=1,2" %%E in ("%~n0%~x0") do set "TEST_NAME=%%E"
+!__! && set "TEST_NAME=%~n0"
 !__! && for /F %%E in ('forfiles /p "%~dp0." /m "%~nx0" /c "cmd /c echo 0x1b"') do set "_ESC=%%E"
 !__! && set "ORG_DIR=!CD!"
 !__! && :
@@ -17,8 +17,8 @@ set "__=set /a _E+=1"
 !__! && :
 !__! && if not defined XXHSUM_EXE (call .\build-with-cmake.bat || goto :ERROR)
 !__! && call .\test-long-path.bat       || goto :ERROR
-!__! && call .\test-trailing-period.bat || goto :ERROR
-!__! && call .\test-trailing-space.bat  || goto :ERROR
+!__! && call .\test-trailing-char.bat "." || goto :ERROR
+!__! && call .\test-trailing-char.bat " " || goto :ERROR
 !__! && call .\test-reserved-names.bat  || goto :ERROR
 
 echo Status =!_ESC![92m OK !_ESC![0m (%TEST_NAME%) && set /a errorno=0 && goto :END

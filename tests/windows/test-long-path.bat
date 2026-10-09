@@ -5,7 +5,7 @@ set /a errorno=1
 set /a _E=8-1
 set "__=set /a _E+=1"
 
-!__! && for /f "delims=. tokens=1,2" %%E in ("%~n0%~x0") do set "TEST_NAME=%%E"
+!__! && set "TEST_NAME=%~n0"
 !__! && for /F %%E in ('forfiles /m "%~nx0" /c "cmd /c echo 0x1b"') do set "_ESC=%%E"
 !__! && set "ORG_DIR=!CD!"
 !__! && :
@@ -28,8 +28,9 @@ set "__=set /a _E+=1"
 !__! && :
 !__! && : Create long path > 300 chars
 !__! && :
-!__! && set "LONG_PATH=0---------1---------2---------3---------4---------5---------6---------7---------8---------9---------\a---------b---------c---------d---------e---------f---------g---------h---------i---------j---------\k---------l---------m---------n---------o---------p---------q---------r---------s---------t---------"
-!__! && rmdir /S /Q "!LONG_PATH!" 2>nul
+!__! && set "PATH_COMPONENT="
+!__! && for /L %%I in (1,1,10) do set "PATH_COMPONENT=!PATH_COMPONENT!0123456789"
+!__! && set "LONG_PATH=!PATH_COMPONENT!\!PATH_COMPONENT!\!PATH_COMPONENT!"
 !__! && mkdir "!LONG_PATH!"                                       || goto :ERROR
 !__! && mkdir "!LONG_PATH!\child"                                 || goto :ERROR
 !__! && :
@@ -53,10 +54,7 @@ set "__=set /a _E+=1"
 !__! && "!XXHSUM_EXE!"     "!DRIVE_RELATIVE_PATH!"                || goto :ERROR
 !__! && if defined XXHASH_TEST_UNC_ROOT "!XXHSUM_EXE!" "!XXHASH_TEST_UNC_ROOT!\!TMPNAME!\!LONG_PATH!\LICENSE" || goto :ERROR
 !__! && if defined XXHASH_TEST_UNC_ROOT "!XXHSUM_EXE!" "!SLASH_UNC_ROOT!/!TMPNAME!/!SLASH_LONG_PATH!" || goto :ERROR
-!__! && "!XXHSUM_EXE!" -H0 "!LONG_PATH!\LICENSE" > test.xxh0      || goto :ERROR
-!__! && "!XXHSUM_EXE!" -H1 "!LONG_PATH!\LICENSE" > test.xxh1      || goto :ERROR
-!__! && "!XXHSUM_EXE!" -H2 "!LONG_PATH!\LICENSE" > test.xxh2      || goto :ERROR
-!__! && "!XXHSUM_EXE!" -H3 "!LONG_PATH!\LICENSE" > test.xxh3      || goto :ERROR
+!__! && for %%H in (0 1 2 3) do ("!XXHSUM_EXE!" -H%%H "!LONG_PATH!\LICENSE" > test.xxh%%H || goto :ERROR)
 !__! && type *.xxh*                                               || goto :ERROR
 !__! && "!XXHSUM_EXE!" -c test.xxh0 test.xxh1 test.xxh2 test.xxh3 || goto :ERROR
 

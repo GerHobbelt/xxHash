@@ -192,7 +192,7 @@ jobs:
     - name: test-all
       if: always()
       run: |
-        make clean test-all
+        make clean test-all MOREFLAGS="-Wconversion -Werror"
 
     - name: test-alias
       run: |
@@ -237,7 +237,6 @@ jobs:
     - name: tests/bench
       run: |
         make -C tests/bench
-        make -C tests/bench clean main.o CC=gcc MOREFLAGS="-Wconversion -Werror"
 
 
   ubuntu-wasm:
@@ -753,9 +752,6 @@ jobs:
           # Expected output is "./xxhsum.exe: PE32+ executable (console) x86-64, for MS Windows"
           file ./xxhsum.exe
           file ./xxhsum.exe | grep -q 'x86-64' || $(exit 1)
-          ./xxhsum.exe --version
-          cmd.exe //d //c "xxhsum.exe *.c > nul"
-          cmd.exe //d //c "set XXHSUM_EXE=%CD%\xxhsum.exe&& call tests\windows\00-test-all.bat"
 
       - name: mingw32
         if: ${{ matrix.msystem == 'mingw32' }}
@@ -766,6 +762,9 @@ jobs:
           # Expected output is "./xxhsum.exe: PE32 executable (console) Intel i386, for MS Windows"
           file ./xxhsum.exe
           file ./xxhsum.exe | grep -q '386' || $(exit 1)
+
+      - name: Test MinGW binary
+        run: |
           ./xxhsum.exe --version
           cmd.exe //d //c "xxhsum.exe *.c > nul"
           cmd.exe //d //c "set XXHSUM_EXE=%CD%\xxhsum.exe&& call tests\windows\00-test-all.bat"

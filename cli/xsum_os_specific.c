@@ -163,20 +163,16 @@ int main(int argc, const char* argv[])
 #  define XSUM_PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH 0x00000010UL
 #  define XSUM_LOAD_LIBRARY_SEARCH_SYSTEM32          0x00000800UL
 
-typedef HRESULT (WINAPI *XSUM_PathCchCanonicalizeExFn)(
-    wchar_t*, size_t, const wchar_t*, ULONG);
 typedef HRESULT (WINAPI *XSUM_PathCchCombineExFn)(
     wchar_t*, size_t, const wchar_t*, const wchar_t*, ULONG);
 
 typedef union {
     FARPROC proc;
-    XSUM_PathCchCanonicalizeExFn canonicalize;
     XSUM_PathCchCombineExFn combine;
 } XSUM_PathCchProc;
 
 typedef struct {
     HMODULE module;
-    XSUM_PathCchCanonicalizeExFn canonicalize;
     XSUM_PathCchCombineExFn combine;
 } XSUM_PathCch;
 
@@ -187,15 +183,13 @@ typedef struct {
  */
 static XSUM_PathCch const* XSUM_getPathCch(void)
 {
-    static XSUM_PathCch api = { NULL, NULL, NULL };
+    static XSUM_PathCch api = { NULL, NULL };
     static int initialized = 0;
     if (!initialized) {
         XSUM_PathCchProc proc;
         api.module = LoadLibraryExW(L"api-ms-win-core-path-l1-1-0.dll", NULL,
                                     XSUM_LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (api.module != NULL) {
-            proc.proc = GetProcAddress(api.module, "PathCchCanonicalizeEx");
-            api.canonicalize = proc.canonicalize;
             proc.proc = GetProcAddress(api.module, "PathCchCombineEx");
             api.combine = proc.combine;
         }
@@ -231,6 +225,7 @@ static wchar_t* XSUM_widenString(const char* str, int* lenOut)
  * Converts a UTF-16 string to UTF-8. Acts like strdup. The string must be freed afterwards.
  * This version allows keeping the output length.
  */
+#ifndef XSUM_NO_MAIN
 static char* XSUM_narrowString(const wchar_t *str, int *lenOut)
 {
     int len = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
@@ -245,11 +240,11 @@ static char* XSUM_narrowString(const wchar_t *str, int *lenOut)
         return buf;
     }
 }
+#endif
 
 /*
  * Converts a UTF-8 path to absolute extended-length path with "\\?\" prefix in UTF-16.
  * Acts like strdup. The string must be freed afterwards.
- * This version allows keeping the output length.
  *
  * Note: The \\?\ prefix (prefix with question) designates a file-system-only path.
  * Unlike the \\.\ prefix (prefix with dot), it does not provide access to DOS device names (e.g. COM1, NUL, CON, etc).
@@ -259,7 +254,6 @@ static wchar_t* XSUM_widenStringAsExtendedLengthPath(const char* path)
 {
     wchar_t* const wide_path = XSUM_widenString(path, NULL);  /* path in wchar_t */
     wchar_t* separator;
-    size_t path_len;
     int starts_with_extended_prefix;
     int starts_with_device_prefix;
     int starts_with_drive;
@@ -273,83 +267,63 @@ static wchar_t* XSUM_widenStringAsExtendedLengthPath(const char* path)
         if (*separator == L'/') *separator = L'\\';
     }
 
-    path_len = wcslen(wide_path);
-    starts_with_extended_prefix = path_len >= 4 && wcsncmp(wide_path, L"\\\\?\\", 4) == 0;
-    starts_with_device_prefix = path_len >= 4 && wcsncmp(wide_path, L"\\\\.\\", 4) == 0;
-    starts_with_drive = path_len >= 2
-        && ((wide_path[0] >= L'A' && wide_path[0] <= L'Z') || (wide_path[0] >= L'a' && wide_path[0] <= L'z'))
+    starts_with_extended_prefix = wcsncmp(wide_path, L"\\\\?\\", 4) == 0;
+    starts_with_device_prefix = wcsncmp(wide_path, L"\\\\.\\", 4) == 0;
+    starts_with_drive = ((wide_path[0] >= L'A' && wide_path[0] <= L'Z')
+                      || (wide_path[0] >= L'a' && wide_path[0] <= L'z'))
         && wide_path[1] == L':';
-    starts_with_dos_absolute = starts_with_drive && path_len >= 3 && wide_path[2] == L'\\';
-    starts_with_unc_absolute = path_len >= 2 && wide_path[0] == L'\\' && wide_path[1] == L'\\';
+    starts_with_dos_absolute = starts_with_drive && wide_path[2] == L'\\';
+    starts_with_unc_absolute = wide_path[0] == L'\\' && wide_path[1] == L'\\';
 
     /* Extended-length and device paths already have explicit semantics. */
     if(starts_with_extended_prefix || starts_with_device_prefix) {
         return wide_path;
     } else {
         XSUM_PathCch const* const pathcch = XSUM_getPathCch();
-        wchar_t* result = NULL;
-
         size_t const size_in_wchars  = 32768; /* 32767 wchar_t + NUL */
         ULONG const path_flags = XSUM_PATHCCH_DO_NOT_NORMALIZE_SEGMENTS
                                | XSUM_PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH;
         wchar_t* exl_path = NULL;
 
-        if(pathcch->module != NULL) {
+        if(pathcch->combine != NULL) {
             exl_path = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
         }
 
         /* exl_path : buffer for extended length path */
         if(exl_path != NULL) {
-            /* If path starts with "\\" or "[A-Za-z]:\" */
-            if(starts_with_unc_absolute || starts_with_dos_absolute) {
-                if(pathcch->canonicalize != NULL) {
-                    HRESULT const hr = pathcch->canonicalize(exl_path, size_in_wchars, wide_path, path_flags);
-                    if(SUCCEEDED(hr) && wcsncmp(exl_path, L"\\\\?\\", 4) == 0) {
-                        result = exl_path;
-                    }
-                }
-            } else if(starts_with_drive) {
-                wchar_t drive_path[3];
-                wchar_t* const drive_cwd = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
-                drive_path[0] = wide_path[0];
-                drive_path[1] = L':';
-                drive_path[2] = L'\0';
-                if(drive_cwd != NULL) {
-                    DWORD const n = GetFullPathNameW(drive_path, (DWORD)size_in_wchars, drive_cwd, NULL);
-                    if(n != 0 && n < size_in_wchars && pathcch->combine != NULL) {
-                        HRESULT const hr = pathcch->combine(exl_path, size_in_wchars,
-                                                           drive_cwd, wide_path + 2, path_flags);
-                        if(SUCCEEDED(hr) && wcsncmp(exl_path, L"\\\\?\\", 4) == 0) {
-                            result = exl_path;
-                        }
-                    }
-                    free(drive_cwd);
-                }
-            } else {
-                /* path is relative path */
-                wchar_t* const cwd = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
-                if(cwd != NULL) {
-                    DWORD const n = GetCurrentDirectoryW((DWORD) size_in_wchars, cwd);
-                    if(n != 0 && n < size_in_wchars) {
-                        if(pathcch->combine != NULL) {
-                            HRESULT const hr = pathcch->combine(exl_path, size_in_wchars, cwd, wide_path, path_flags);
-                            if(SUCCEEDED(hr) && wcsncmp(exl_path, L"\\\\?\\", 4) == 0) {
-                                result = exl_path;
-                            }
-                        }
-                    }
-                    free(cwd);
-                }
-            }
+            HRESULT hr = E_FAIL;
+            wchar_t* base_path = NULL;
+            wchar_t const* path_tail = wide_path;
+            int can_combine = starts_with_unc_absolute || starts_with_dos_absolute;
 
-            /* Tricky part: if result doesn't use exl_path, free exl_path */
-            if(result != exl_path) {
-                free(exl_path);
+            if(!can_combine) {
+                base_path = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
+                if(base_path != NULL) {
+                    DWORD n;
+                    if(starts_with_drive) {
+                        wchar_t drive_path[3];
+                        drive_path[0] = wide_path[0];
+                        drive_path[1] = L':';
+                        drive_path[2] = L'\0';
+                        n = GetFullPathNameW(drive_path, (DWORD)size_in_wchars, base_path, NULL);
+                        path_tail += 2;
+                    } else {
+                        n = GetCurrentDirectoryW((DWORD)size_in_wchars, base_path);
+                    }
+                    can_combine = n != 0 && n < size_in_wchars;
+                }
             }
-        }
-        if (result != NULL) {
-            free(wide_path);
-            return result;
+            if(can_combine) {
+                hr = pathcch->combine(exl_path, size_in_wchars,
+                                      base_path, path_tail, path_flags);
+            }
+            free(base_path);
+
+            if(SUCCEEDED(hr) && wcsncmp(exl_path, L"\\\\?\\", 4) == 0) {
+                free(wide_path);
+                return exl_path;
+            }
+            free(exl_path);
         }
         return wide_path;
     }
