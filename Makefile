@@ -240,10 +240,21 @@ test-mem: xxhsum check
 test32: xxhsum32
 	@echo ---- test 32-bit ----
 	./xxhsum32 -bi0 xxhash.c
+	./xxhsum32 -bi0 -B4294967277 2>&1 | $(GREP) "Error: benchmark block size is too large"
 
 TEST_FILES = xxhsum$(EXT) xxhash.c xxhash.h
 .PHONY: test-xxhsum-c
 test-xxhsum-c: xxhsum
+	# --seed requires a value
+	./xxhsum --seed 2>&1 | $(GREP) -q "^Wrong parameters"
+	./xxhsum -H0 --seed 2>&1 | $(GREP) -q "^Wrong parameters"
+	# --seed is independent of option order
+	test "$$(./xxhsum -H0 --seed 1234 Makefile)" = "$$(./xxhsum --seed 1234 -H0 Makefile)"
+	# -s# is equivalent to --seed #
+	test "$$(./xxhsum -H0 --seed 1234 Makefile)" = "$$(./xxhsum -H0 -s1234 Makefile)"
+	test "$$(./xxhsum -H1 --seed 4294967296 Makefile)" = "$$(./xxhsum -H1 -s4294967296 Makefile)"
+	# --seed applies to every algorithm detected by --check
+	{ ./xxhsum -H0 --seed 1234 Makefile; ./xxhsum -H1 --seed 1234 Makefile; } | ./xxhsum --seed 1234 -c -
 	# xxhsum to/from pipe
 	./xxhsum $(TEST_FILES) | ./xxhsum -c -
 	./xxhsum -H0 $(TEST_FILES) | ./xxhsum -c -
@@ -501,8 +512,13 @@ test-inline-notexposed: xxhsum_inlinedXXH
 	$(NM) xxhsum_inlinedXXH | $(GREP) "t _XXH32_" ; test $$? -eq 1  # no XXH32 symbol should be left
 	$(NM) xxhsum_inlinedXXH | $(GREP) "t _XXH64_" ; test $$? -eq 1  # no XXH64 symbol should be left
 
+# this test checks that a unit requesting XXH_INLINE_ALL can nonetheless employ the x86 dispatcher
+.PHONY: test-inline-dispatch
+test-inline-dispatch:
+	$(MAKE) -C tests test_inline_dispatch
+
 .PHONY: test-inline
-test-inline: test-inline-notexposed test-multiInclude
+test-inline: test-inline-notexposed test-multiInclude test-inline-dispatch
 
 
 .PHONY: test-all
