@@ -256,6 +256,17 @@ test-xxhsum-c: xxhsum
 	! ./xxhsum $(TEST_FILES) 2>&1 | grep Loading
 	# Check that xxhsum do display filename that it failed to open.
 	LC_ALL=C ./xxhsum nonexistent 2>&1 | grep "Error: Could not open 'nonexistent'"
+	# A read error must not prevent subsequent files from being hashed (#1064).
+	@if test -r /proc/self/mem; then \
+		./xxhsum Makefile > .test.read-error.expected || exit 1; \
+		if ./xxhsum /proc/self/mem Makefile > .test.read-error.actual; then \
+			echo "Expected /proc/self/mem to fail while reading" >&2; \
+			exit 1; \
+		fi; \
+		diff -u .test.read-error.expected .test.read-error.actual; \
+	else \
+		echo "Skipping read-error test: /proc/self/mem is unavailable"; \
+	fi
 	# xxhsum to/from file, shell redirection
 	./xxhsum $(TEST_FILES) > .test.xxh64
 	./xxhsum --tag $(TEST_FILES) > .test.xxh64_tag
@@ -273,6 +284,13 @@ test-xxhsum-c: xxhsum
 	./xxhsum -H3 --tag $(TEST_FILES) > .test.xxh3_tag
 	./xxhsum -H3 --little-endian $(TEST_FILES) > .test.le_xxh3
 	./xxhsum -H3 --tag --little-endian $(TEST_FILES) > .test.le_xxh3_tag
+	# --quiet works before and after the checksum filename (#1098)
+	test -z "$$(./xxhsum --quiet -c .test.xxh64)"
+	test -z "$$(./xxhsum -c .test.xxh64 --quiet)"
+	test -z "$$(./xxhsum -c .test.xxh64 -q)"
+	# -- stops option processing, including after a filename
+	LC_ALL=C ./xxhsum -c .test.xxh64 -- --quiet 2>&1 | $(GREP) -q "Could not open '--quiet':"
+	! LC_ALL=C ./xxhsum -c .test.xxh64 -- --quiet 2>&1 | $(GREP) -q "Could not open '--':"
 	./xxhsum -c .test.xxh*
 	./xxhsum -c --little-endian .test.le_xxh*
 	./xxhsum -c .test.*_tag
