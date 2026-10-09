@@ -158,8 +158,56 @@ int main(int argc, const char* argv[])
 #else
 #  include <windows.h>
 #  include <wchar.h>
-#  include <pathcch.h> /* Windows 8, Windows Server 2012 : PathCchCanonicalizeEx, PathCchCombineEx */
-#  pragma comment(lib, "Pathcch.lib") /* TODO : (1) avoid pragma. (2) avoid pathcch.lib if we need to support Windows 7 */
+
+#  define XSUM_PATHCCH_DO_NOT_NORMALIZE_SEGMENTS     0x00000008UL
+#  define XSUM_PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH 0x00000010UL
+
+typedef HRESULT (WINAPI *XSUM_PathCchCanonicalizeExFn)(
+    wchar_t*, size_t, const wchar_t*, ULONG);
+typedef HRESULT (WINAPI *XSUM_PathCchCombineExFn)(
+    wchar_t*, size_t, const wchar_t*, const wchar_t*, ULONG);
+
+typedef union {
+    FARPROC proc;
+    XSUM_PathCchCanonicalizeExFn canonicalize;
+    XSUM_PathCchCombineExFn combine;
+} XSUM_PathCchProc;
+
+typedef struct {
+    HMODULE module;
+    XSUM_PathCchCanonicalizeExFn canonicalize;
+    XSUM_PathCchCombineExFn combine;
+} XSUM_PathCch;
+
+/*
+ * PathCch is available since Windows 8, while the flags used below require
+ * Windows 10 version 1703. Resolve it at runtime so the executable retains
+ * its previous behavior on older versions of Windows.
+ */
+static XSUM_PathCch const* XSUM_getPathCch(void)
+{
+    static XSUM_PathCch api = { NULL, NULL, NULL };
+    static int initialized = 0;
+    if (!initialized) {
+        static wchar_t const pathcch_dll[] = L"\\pathcch.dll";
+        wchar_t system_path[MAX_PATH];
+        UINT const system_path_len = GetSystemDirectoryW(system_path, MAX_PATH);
+        XSUM_PathCchProc proc;
+        if (system_path_len > 0
+                && system_path_len + sizeof(pathcch_dll) / sizeof(pathcch_dll[0]) <= MAX_PATH) {
+            memcpy(system_path + system_path_len, pathcch_dll, sizeof(pathcch_dll));
+            api.module = LoadLibraryW(system_path);
+        }
+        if (api.module != NULL) {
+            proc.proc = GetProcAddress(api.module, "PathCchCanonicalizeEx");
+            api.canonicalize = proc.canonicalize;
+            proc.proc = GetProcAddress(api.module, "PathCchCombineEx");
+            api.combine = proc.combine;
+        }
+        initialized = 1;
+    }
+    return &api;
+}
 
 /*****************************************************************************
  *                       Unicode conversion tools
@@ -210,37 +258,58 @@ static char* XSUM_narrowString(const wchar_t *str, int *lenOut)
  *
  * Note: The \\?\ prefix (prefix with question) designates a file-system-only path.
  * Unlike the \\.\ prefix (prefix with dot), it does not provide access to DOS device names (e.g. COM1, NUL, CON, etc).
+ * Explicit \\.\ device paths are therefore left unchanged.
  */
 static wchar_t* XSUM_widenStringAsExtendedLengthPath(const char* path)
 {
     wchar_t* const wide_path = XSUM_widenString(path, NULL);  /* path in wchar_t */
     size_t const path_len = strlen(path);
     int const starts_with_extended_prefix = path_len >= 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\';
+    int const starts_with_device_prefix = path_len >= 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '.' && path[3] == '\\';
+    int const starts_with_drive = path_len >= 2
+        && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'))
+        && path[1] == ':';
+    int const starts_with_dos_absolute = starts_with_drive && path_len >= 3
+        && (path[2] == '\\' || path[2] == '/');
 
-    /* If path starts with "\\?\" */
-    if(starts_with_extended_prefix) {
-        /* just return wchar_t version of it. */
+    if (wide_path == NULL) return NULL;
+
+    /* Extended-length and device paths already have explicit semantics. */
+    if(starts_with_extended_prefix || starts_with_device_prefix) {
         return wide_path;
     } else {
+        XSUM_PathCch const* const pathcch = XSUM_getPathCch();
         wchar_t* result = NULL;
 
         size_t const size_in_wchars  = 32768; /* 32767 wchar_t + NUL */
-        ULONG  const canonical_flags = PATHCCH_DO_NOT_NORMALIZE_SEGMENTS;
-        ULONG  const combine_flags   = canonical_flags | PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH;
+        ULONG const path_flags = XSUM_PATHCCH_DO_NOT_NORMALIZE_SEGMENTS
+                               | XSUM_PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH;
 
         /* exl_path : buffer for extended length path */
         wchar_t* const exl_path = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
-        if(exl_path != NULL) {
+        if(exl_path != NULL && pathcch->module != NULL) {
             int const starts_with_unc_absolute = path_len >= 2 && path[0] == '\\' && path[1] == '\\';
-            int const starts_with_dos_absolute = path_len >= 3 && isalpha(path[0]) && path[1] == ':' && (path[2] == '\\' || path[2] == '/');
 
             /* If path starts with "\\" or "[A-Za-z]:\" */
             if(starts_with_unc_absolute || starts_with_dos_absolute) {
-                if(exl_path != NULL) {
-                    HRESULT const hr = PathCchCanonicalizeEx(exl_path, size_in_wchars, wide_path, canonical_flags);
-                    if(SUCCEEDED(hr)) {
+                if(pathcch->canonicalize != NULL) {
+                    HRESULT const hr = pathcch->canonicalize(exl_path, size_in_wchars, wide_path, path_flags);
+                    if(SUCCEEDED(hr) && wcsncmp(exl_path, L"\\\\?\\", 4) == 0) {
                         result = exl_path;
                     }
+                }
+            } else if(starts_with_drive) {
+                /* Resolve drive-relative paths using that drive's current directory. */
+                wchar_t* const abs_path = (wchar_t*) malloc(size_in_wchars * sizeof(wchar_t));
+                if(abs_path != NULL) {
+                    DWORD const n = GetFullPathNameW(wide_path, (DWORD)size_in_wchars, abs_path, NULL);
+                    if(n != 0 && n < size_in_wchars && pathcch->canonicalize != NULL) {
+                        HRESULT const hr = pathcch->canonicalize(exl_path, size_in_wchars, abs_path, path_flags);
+                        if(SUCCEEDED(hr) && wcsncmp(exl_path, L"\\\\?\\", 4) == 0) {
+                            result = exl_path;
+                        }
+                    }
+                    free(abs_path);
                 }
             } else {
                 /* path is relative path */
@@ -248,9 +317,9 @@ static wchar_t* XSUM_widenStringAsExtendedLengthPath(const char* path)
                 if(cwd != NULL) {
                     DWORD const n = GetCurrentDirectoryW((DWORD) size_in_wchars, cwd);
                     if(n != 0 && n < size_in_wchars) {
-                        if(exl_path != NULL) {
-                            HRESULT const hr = PathCchCombineEx(exl_path, size_in_wchars, cwd, wide_path, combine_flags);
-                            if(SUCCEEDED(hr)) {
+                        if(pathcch->combine != NULL) {
+                            HRESULT const hr = pathcch->combine(exl_path, size_in_wchars, cwd, wide_path, path_flags);
+                            if(SUCCEEDED(hr) && wcsncmp(exl_path, L"\\\\?\\", 4) == 0) {
                                 result = exl_path;
                             }
                         }
@@ -264,8 +333,11 @@ static wchar_t* XSUM_widenStringAsExtendedLengthPath(const char* path)
                 free(exl_path);
             }
         }
-        free(wide_path);
-        return result;
+        if (result != NULL) {
+            free(wide_path);
+            return result;
+        }
+        return wide_path;
     }
 }
 
