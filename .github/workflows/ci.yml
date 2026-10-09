@@ -339,6 +339,12 @@ jobs:
       run: |
         make clean test-cli-comment-line
 
+    - name: LIBXXH_DISPATCH static library
+      run: |
+        make clean libxxhash.a LIBXXH_DISPATCH=1
+        cc -Wall -Wextra -Werror tests/inlineDispatch.c libxxhash.a -o staticDispatch
+        ./staticDispatch
+
   ubuntu-cmake-unofficial:
     name: Linux x64 cmake unofficial build test
     runs-on: ubuntu-latest
@@ -554,6 +560,12 @@ jobs:
         # test scenario where "stdout" is not the console
         make clean test MOREFLAGS='-Werror' | tee
 
+    - name: Rosetta cross-compile to ARM64 (#1081)
+      run: |
+        arch -x86_64 /usr/bin/make clean
+        arch -x86_64 /usr/bin/make CC=/usr/bin/clang CFLAGS='-O2 -arch arm64 -Werror' xxhsum
+        file xxhsum | grep 'Mach-O 64-bit executable arm64'
+
 
   # Windows, { VC++2022, VC++2019 } x { x64, Win32, ARM, ARM64 }
   #
@@ -603,6 +615,14 @@ jobs:
       if: ${{ matrix.arch == 'x64' || matrix.arch == 'Win32' }}
       run: |
         C:\install\bin\xxhsum.exe -bi1
+
+    - name: Test MSVC link-time optimization
+      if: ${{ matrix.arch == 'x64' }}
+      shell: cmd
+      run: |
+        call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        cl /nologo /O2 /GL /W4 /WX /I. xxhash.c tests\msvc_ltcg_test.cpp /Fe:msvc_ltcg_test.exe /link /LTCG /WX
+        msvc_ltcg_test.exe
 
 
     - name: Build ${{ matrix.system.os }}, ${{ matrix.arch }}, with DISPATCH
@@ -668,7 +688,7 @@ jobs:
         shell: msys2 {0}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: msys2/setup-msys2@7efe20baefed56359985e327d329042cde2434ff # v2
+      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
         with:
           msystem: MSYS
           install: mingw-w64-i686-make ${{ matrix.toolchain }}

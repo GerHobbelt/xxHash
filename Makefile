@@ -55,7 +55,7 @@ EXT =
 endif
 
 # automatically enable runtime vector dispatch on x86/64 targets
-detect_x86_arch = $(shell $(CC) -dumpmachine | grep -E 'i[3-6]86|x86_64')
+detect_x86_arch = $(shell $(CC) $(CFLAGS) -dumpmachine | grep -E 'i[3-6]86|x86_64')
 ifneq ($(strip $(call detect_x86_arch)),)
     #note: can be overridden at compile time, by setting DISPATCH=0
     DISPATCH ?= 1
@@ -139,14 +139,15 @@ $(eval $(call c_program,xxhsum_inlinedXXH,$(CLI_OBJS)))
 # =================================================
 # library
 
+LIBXXHASH_OBJS := xxhash.o $(if $(filter 1,$(LIBXXH_DISPATCH)),xxh_x86dispatch.o)
+
 libxxhash.a:
-$(eval $(call static_library,libxxhash.a,xxhash.o))
+$(eval $(call static_library,libxxhash.a,$(LIBXXHASH_OBJS)))
 
 $(LIBXXH): LDFLAGS += $(SONAME_FLAGS)
 ifeq (,$(filter Windows%,$(OS)))
 $(LIBXXH): CFLAGS += -fPIC
 endif
-LIBXXHASH_OBJS := xxhash.o $(if $(filter 1,$(LIBXXH_DISPATCH)),xxh_x86dispatch.o)
 $(eval $(call c_dynamic_library,$(LIBXXH),$(LIBXXHASH_OBJS)))
 
 libxxhash.$(SHARED_EXT_MAJOR): $(LIBXXH)
